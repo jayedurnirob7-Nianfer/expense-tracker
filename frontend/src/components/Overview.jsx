@@ -4,7 +4,7 @@ import { format, isSameMonth, subMonths } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
 
-const Overview = ({ onOpenAddModal }) => {
+const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   const { 
     transactions, 
     categories, 
@@ -297,7 +297,7 @@ const Overview = ({ onOpenAddModal }) => {
             <p className="text-[13px] text-secondary-foreground/70">Cycle: {format(selectedMonth, 'MMMM yyyy')}</p>
           </div>
           <button 
-            onClick={onOpenAddModal}
+            onClick={onOpenAddBillModal || onOpenAddModal}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
           >
             <Plus size={16} />

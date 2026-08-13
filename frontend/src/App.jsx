@@ -7,6 +7,7 @@ import Bills from './components/Bills';
 import SettingsView from './components/SettingsView';
 import Auth from './components/Auth';
 import AddTransactionModal from './components/AddTransactionModal';
+import AddBillModal from './components/AddBillModal';
 import useStore from './store/useStore';
 
 function App() {
@@ -18,7 +19,8 @@ function App() {
     activeView
   } = useStore();
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddTxOpen, setIsAddTxOpen] = useState(false);
+  const [isAddBillOpen, setIsAddBillOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -60,11 +62,11 @@ function App() {
 
   const renderView = () => {
     switch (activeView) {
-      case 'Overview': return <Overview onOpenAddModal={() => setIsAddModalOpen(true)} />;
+      case 'Overview': return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
       case 'DebitCredit': return <DebitCredit />;
-      case 'Bills': return <Bills onOpenAddModal={() => setIsAddModalOpen(true)} />;
+      case 'Bills': return <Bills onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
       case 'Settings': return <SettingsView />;
-      default: return <Overview onOpenAddModal={() => setIsAddModalOpen(true)} />;
+      default: return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
     }
   };
 
@@ -74,15 +76,19 @@ function App() {
       
       <Header 
         onOpenSidebar={() => setIsSidebarOpen(true)}
-        onOpenAddModal={() => setIsAddModalOpen(true)} 
+        onOpenAddModal={() => setIsAddTxOpen(true)} 
       />
       
       <main className="py-6 px-4 sm:px-6 lg:px-8">
         {renderView()}
       </main>
 
-      {isAddModalOpen && (
-        <AddTransactionModal onClose={() => setIsAddModalOpen(false)} />
+      {isAddTxOpen && (
+        <AddTransactionModal onClose={() => setIsAddTxOpen(false)} />
+      )}
+
+      {isAddBillOpen && (
+        <AddBillModal onClose={() => setIsAddBillOpen(false)} />
       )}
     </div>
   );

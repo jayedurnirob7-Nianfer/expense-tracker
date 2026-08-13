@@ -31,10 +31,14 @@ const seedDefaultData = async () => {
       const defaults = [
         { name: 'Salary', type: 'Income', color: '#10b981' },
         { name: 'Freelance', type: 'Income', color: '#3b82f6' },
-        { name: 'Food & Dining', type: 'Expense', color: '#f59e0b', budget: 500 },
-        { name: 'Housing & Utilities', type: 'Expense', color: '#ef4444', budget: 1200 },
-        { name: 'Entertainment', type: 'Expense', color: '#8b5cf6', budget: 300 },
-        { name: 'Transport', type: 'Expense', color: '#ec4899', budget: 200 },
+        { name: 'Food & Dining', type: 'Expense', color: '#f59e0b' },
+        { name: 'Transport', type: 'Expense', color: '#3b82f6' },
+        { name: 'Rent & Bills', type: 'Expense', color: '#ef4444' },
+        { name: 'Shopping', type: 'Expense', color: '#ec4899' },
+        { name: 'Health', type: 'Expense', color: '#14b8a6' },
+        { name: 'Entertainment', type: 'Expense', color: '#8b5cf6' },
+        { name: 'Savings & Invest', type: 'Expense', color: '#6366f1' },
+        { name: 'Others', type: 'Expense', color: '#6b7280' },
       ];
       await Category.insertMany(defaults);
       console.log('Seeded default categories');
