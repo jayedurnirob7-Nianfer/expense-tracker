@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 249 250 251;
+    --foreground: 17 24 39;
+    --card: 255 255 255;
+    --primary: 79 70 229;
+    --primary-foreground: 255 255 255;
+    --secondary: 243 244 246;
+    --secondary-foreground: 71 85 105;
+    --accent: 248 250 252;
+    --destructive: 239 68 68;
+    --border: 229 231 235;
+  }
+
+  .dark {
+    --background: 11 15 25;
+    --foreground: 248 250 252;
+    --card: 19 27 44;
+    --primary: 99 102 241;
+    --primary-foreground: 255 255 255;
+    --secondary: 30 41 59;
+    --secondary-foreground: 148 163 184;
+    --accent: 30 41 59;
+    --destructive: 248 113 113;
+    --border: 51 65 85;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-300 antialiased;
+  }
+  ::selection {
+    background-color: rgba(var(--primary), 0.3);
+  }
+}
+
+/* Remove number input arrows */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-secondary-foreground/20;
+}
+
+/* React Datepicker Custom Overrides */
+.react-datepicker-wrapper {
+  display: block;
+  width: 100%;
+}
+.react-datepicker {
+  @apply bg-card border border-border font-sans rounded-2xl shadow-2xl !important;
+}
+.react-datepicker__header {
+  @apply bg-secondary/50 border-b border-border rounded-t-2xl py-4 !important;
+}
+.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header {
+  @apply text-foreground font-bold text-sm tracking-wide !important;
+}
+.react-datepicker__day-name {
+  @apply text-secondary-foreground font-medium text-xs uppercase !important;
+}
+.react-datepicker__day {
+  @apply text-foreground hover:bg-secondary rounded-xl transition-all duration-200 m-1 w-8 h-8 leading-8 !important;
+}
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-md shadow-primary/20 !important;
+}
+.react-datepicker__day--outside-month {
+  @apply text-secondary-foreground/30 !important;
+}
+.react-datepicker__navigation-icon::before {
+  @apply border-secondary-foreground transition-colors hover:border-foreground !important;
+}
