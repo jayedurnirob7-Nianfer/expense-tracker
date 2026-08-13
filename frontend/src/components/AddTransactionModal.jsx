@@ -203,6 +203,7 @@ const AddTransactionModal = ({ onClose }) => {
                 <DatePicker
                   selected={date}
                   onChange={(d) => setDate(d)}
+                  popperPlacement="bottom-start"
                   customInput={
                     <button
                       type="button"
