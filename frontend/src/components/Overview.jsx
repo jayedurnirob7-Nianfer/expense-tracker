@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight, Plus, Trash2, RefreshCcw } from 'lucide-react';
-import { format, isSameMonth, subMonths } from 'date-fns';
+import { format, isSameMonth, isSameDay, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
 
@@ -72,31 +72,38 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
     }).sort((a, b) => b.value - a.value);
   }, [monthlyTransactions, categories]);
 
-  // Last 6 months bar chart data
-  const sixMonthHistory = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = subMonths(selectedMonth, i);
-      const label = format(monthDate, 'MMM');
+  // Daily breakdown bar chart data for selected month
+  const dailyHistory = useMemo(() => {
+    const totalDays = getDaysInMonth(selectedMonth);
+    const monthStart = startOfMonth(selectedMonth);
+    const days = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      const currentDayDate = addDays(monthStart, i);
+      const dayNum = i + 1;
+      const dayLabel = String(dayNum);
 
       let inc = 0;
       let exp = 0;
-      transactions.forEach(t => {
+
+      monthlyTransactions.forEach(t => {
         const d = new Date(t.date);
-        if (isSameMonth(d, monthDate)) {
+        if (isSameDay(d, currentDayDate)) {
           if (t.type === 'Income') inc += Number(t.amount);
           else exp += Number(t.amount);
         }
       });
 
-      months.push({
-        month: label,
+      days.push({
+        day: dayLabel,
+        dateStr: format(currentDayDate, 'MMM d, yyyy'),
         Income: inc,
         Expense: exp
       });
     }
-    return months;
-  }, [transactions, selectedMonth]);
+
+    return days;
+  }, [monthlyTransactions, selectedMonth]);
 
   // Essential bills summary for selected month
   const bills = useMemo(() => {
@@ -203,18 +210,27 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
           </div>
         </div>
 
-        {/* Last 6 months */}
+        {/* Daily Activity for selected month */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
-          <h3 className="font-bold text-[15px] mb-0.5">Last 6 months</h3>
-          <p className="text-xs text-secondary-foreground mb-4">Income vs expenses history</p>
+          <h3 className="font-bold text-[15px] mb-0.5">Daily activity</h3>
+          <p className="text-xs text-secondary-foreground mb-4">Daily candles for {format(selectedMonth, 'MMMM yyyy')}</p>
           <div className="flex-1 flex items-center justify-center">
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={sixMonthHistory}>
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#888' }} />
+              <BarChart data={dailyHistory} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <XAxis 
+                  dataKey="day" 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tick={{ fontSize: 10, fill: '#888' }}
+                  interval={dailyHistory.length > 20 ? 2 : 0}
+                />
                 <YAxis hide />
-                <Tooltip formatter={(val) => `${currency} ${Number(val).toLocaleString()}`} />
-                <Bar dataKey="Income" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Expense" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Tooltip 
+                  labelFormatter={(dayLabel, items) => items[0]?.payload?.dateStr || `Day ${dayLabel}`}
+                  formatter={(val, name) => [`${currency} ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, name]} 
+                />
+                <Bar dataKey="Income" fill="#10b981" radius={[3, 3, 0, 0]} barSize={6} />
+                <Bar dataKey="Expense" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={6} />
               </BarChart>
             </ResponsiveContainer>
           </div>
