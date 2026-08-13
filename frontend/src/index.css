@@ -73,26 +73,78 @@ input[type=number] {
   width: 100%;
 }
 .react-datepicker {
-  @apply bg-card border border-border font-sans rounded-2xl shadow-2xl !important;
+  background-color: #131d2b !important;
+  border: 1px solid #1e293b !important;
+  font-family: inherit !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+  overflow: hidden !important;
+  padding: 0.75rem !important;
+  color: #ffffff !important;
 }
 .react-datepicker__header {
-  @apply bg-secondary/50 border-b border-border rounded-t-2xl py-4 !important;
+  background-color: transparent !important;
+  border-bottom: none !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
 }
-.react-datepicker__current-month, .react-datepicker-time__header, .react-datepicker-year-header {
-  @apply text-foreground font-bold text-sm tracking-wide !important;
+.react-datepicker__current-month {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  margin-bottom: 0.75rem !important;
 }
 .react-datepicker__day-name {
-  @apply text-secondary-foreground font-medium text-xs uppercase !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  width: 2.25rem !important;
+  line-height: 2.25rem !important;
+  margin: 0.125rem !important;
+}
+.react-datepicker__month {
+  margin: 0.25rem 0 0 0 !important;
 }
 .react-datepicker__day {
-  @apply text-foreground hover:bg-secondary rounded-xl transition-all duration-200 m-1 w-8 h-8 leading-8 !important;
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+  font-size: 0.85rem !important;
+  border-radius: 9999px !important;
+  transition: all 0.15s ease !important;
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  line-height: 2.25rem !important;
+  margin: 0.125rem !important;
 }
-.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected {
-  @apply bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-md shadow-primary/20 !important;
+.react-datepicker__day:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #23c55e !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+.react-datepicker__day--selected:hover {
+  background-color: #1ea850 !important;
 }
 .react-datepicker__day--outside-month {
-  @apply text-secondary-foreground/30 !important;
+  color: #475569 !important;
+}
+.react-datepicker__triangle {
+  fill: #131d2b !important;
+  color: #131d2b !important;
+  stroke: #1e293b !important;
+}
+.react-datepicker__navigation {
+  top: 1rem !important;
 }
 .react-datepicker__navigation-icon::before {
-  @apply border-secondary-foreground transition-colors hover:border-foreground !important;
+  border-color: #94a3b8 !important;
+  border-width: 2px 2px 0 0 !important;
+}
+.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before {
+  border-color: #ffffff !important;
 }

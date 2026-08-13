@@ -3,8 +3,8 @@ import { addMonths, subMonths } from 'date-fns';
 import api from '../api';
 
 const useStore = create((set, get) => ({
-  isAuthenticated: !!localStorage.getItem('token'),
-  isLocked: false,
+  isAuthenticated: false,
+  isLocked: !!localStorage.getItem('token'),
   isSetupComplete: true,
   activeView: 'Overview',
   selectedMonth: new Date(),
@@ -33,7 +33,10 @@ const useStore = create((set, get) => ({
       get().fetchData();
       return { success: true };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Login failed' };
+      const msg = error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Network Error')
+        ? 'Cannot connect to server. Please ensure backend server is running on port 5000.'
+        : (error.response?.data?.message || 'Login failed');
+      return { success: false, message: msg };
     }
   },
 
@@ -49,7 +52,10 @@ const useStore = create((set, get) => ({
       }
       return { success: true };
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Setup failed' };
+      const msg = error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.message?.includes('Network Error')
+        ? 'Cannot connect to server. Please ensure backend server is running on port 5000.'
+        : (error.response?.data?.message || 'Setup failed');
+      return { success: false, message: msg };
     }
   },
 

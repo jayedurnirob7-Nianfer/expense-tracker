@@ -57,7 +57,7 @@ const seedDefaultData = async () => {
 const connectDB = async () => {
   const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/expense-tracker';
   try {
-    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 3000 });
+    await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 800 });
     console.log('Connected to MongoDB');
     await seedDefaultData();
   } catch (err) {
@@ -76,15 +76,17 @@ const connectDB = async () => {
   }
 };
 
-connectDB();
+const startServer = async () => {
+  await connectDB();
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
+};
 
-// For local development
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+startServer();
 
 // For Vercel Serverless Functions
 module.exports = app;
