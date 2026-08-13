@@ -24,7 +24,7 @@ const Header = ({ onOpenSidebar, onOpenAddModal }) => {
             
             <div className="flex flex-col">
               <span className="text-[10px] font-bold tracking-widest text-primary uppercase mb-0.5">
-                Nirob Expence Lerger
+                Nirob Expense Ledger
               </span>
               <h1 className="text-2xl font-bold tracking-tight text-foreground leading-none">
                 {title}

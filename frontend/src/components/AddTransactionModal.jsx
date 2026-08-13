@@ -5,7 +5,8 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const AddTransactionModal = ({ onClose }) => {
-  const { categories, addTransaction } = useStore();
+  const { categories, addTransaction, settings } = useStore();
+  const currency = settings?.currency || 'BDT';
   const [formData, setFormData] = useState({
     amount: '',
     date: new Date(),
@@ -16,7 +17,7 @@ const AddTransactionModal = ({ onClose }) => {
     status: 'Paid'
   });
 
-  const parentCategories = categories.filter(c => !c.parent && c.type === formData.type);
+  const parentCategories = categories.filter(c => !c.parent && c.type?.toLowerCase() === formData.type.toLowerCase());
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,15 +59,15 @@ const AddTransactionModal = ({ onClose }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Amount</label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Amount ({currency})</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground font-medium">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-foreground font-medium text-xs">{currency}</span>
               <input 
                 type="number" 
                 step="0.01" 
                 required
                 placeholder="0.00"
-                className="w-full pl-8 pr-4 py-3 rounded-xl bg-secondary/20 border border-border text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-lg font-medium"
+                className="w-full pl-12 pr-4 py-3 rounded-xl bg-secondary/20 border border-border text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-lg font-medium"
                 value={formData.amount}
                 onChange={(e) => setFormData({...formData, amount: e.target.value})}
               />

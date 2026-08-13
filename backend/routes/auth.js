@@ -16,7 +16,12 @@ router.post('/setup', async (req, res) => {
     }
     const user = new User({ password });
     await user.save();
-    res.status(201).json({ message: 'User created successfully' });
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '7d' } 
+    );
+    res.status(201).json({ token, isSetup: true, message: 'User created successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

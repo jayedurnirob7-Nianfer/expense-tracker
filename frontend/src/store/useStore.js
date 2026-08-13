@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { addMonths, subMonths } from 'date-fns';
 import api from '../api';
 
 const useStore = create((set, get) => ({
@@ -6,8 +7,12 @@ const useStore = create((set, get) => ({
   isLocked: false,
   isSetupComplete: true,
   activeView: 'Overview',
+  selectedMonth: new Date(),
 
   setActiveView: (view) => set({ activeView: view }),
+  setSelectedMonth: (date) => set({ selectedMonth: date }),
+  prevMonth: () => set((state) => ({ selectedMonth: subMonths(state.selectedMonth, 1) })),
+  nextMonth: () => set((state) => ({ selectedMonth: addMonths(state.selectedMonth, 1) })),
   
   fetchData: async () => {
     const state = get();
@@ -21,8 +26,11 @@ const useStore = create((set, get) => ({
   login: async (password) => {
     try {
       const res = await api.post('/auth/login', { password });
-      localStorage.setItem('token', res.data.token);
-      set({ isAuthenticated: true, isLocked: false });
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+      set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
+      get().fetchData();
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Login failed' };
@@ -31,8 +39,14 @@ const useStore = create((set, get) => ({
 
   setup: async (password) => {
     try {
-      await api.post('/auth/setup', { password });
-      set({ isSetupComplete: true });
+      const res = await api.post('/auth/setup', { password });
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+        set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
+        get().fetchData();
+      } else {
+        set({ isSetupComplete: true });
+      }
       return { success: true };
     } catch (error) {
       return { success: false, message: error.response?.data?.message || 'Setup failed' };
@@ -62,8 +76,8 @@ const useStore = create((set, get) => ({
   fetchSettings: async () => {
     try {
       const res = await api.get('/settings');
-      set({ settings: res.data });
-      if (res.data.theme === 'dark') {
+      set({ settings: res.data || { currency: 'BDT', theme: 'dark' } });
+      if (res.data?.theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
@@ -90,7 +104,7 @@ const useStore = create((set, get) => ({
   fetchCategories: async () => {
     try {
       const res = await api.get('/categories');
-      set({ categories: res.data });
+      set({ categories: res.data || [] });
     } catch (error) {
       console.error(error);
     }
@@ -98,11 +112,25 @@ const useStore = create((set, get) => ({
 
   addCategory: async (data) => {
     try {
-      const res = await api.post('/categories', data);
+      // Standardize category type to 'Income' or 'Expense'
+      const formattedType = data.type ? (data.type.charAt(0).toUpperCase() + data.type.slice(1).toLowerCase()) : 'Expense';
+      const res = await api.post('/categories', { ...data, type: formattedType });
       set((state) => ({ categories: [...state.categories, res.data] }));
       return { success: true };
     } catch (error) {
-      return { success: false, message: error.response?.data?.error || 'Error' };
+      return { success: false, message: error.response?.data?.error || 'Error adding category' };
+    }
+  },
+
+  updateCategory: async (id, data) => {
+    try {
+      const res = await api.put(`/categories/${id}`, data);
+      set((state) => ({
+        categories: state.categories.map(c => c._id === id ? res.data : c)
+      }));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.error || 'Error updating category' };
     }
   },
 
@@ -118,7 +146,7 @@ const useStore = create((set, get) => ({
   fetchTransactions: async (filters = {}) => {
     try {
       const res = await api.get('/transactions', { params: filters });
-      set({ transactions: res.data });
+      set({ transactions: res.data || [] });
     } catch (error) {
       console.error(error);
     }
@@ -126,7 +154,8 @@ const useStore = create((set, get) => ({
 
   addTransaction: async (data) => {
     try {
-      const res = await api.post('/transactions', data);
+      const formattedType = data.type ? (data.type.charAt(0).toUpperCase() + data.type.slice(1).toLowerCase()) : 'Expense';
+      const res = await api.post('/transactions', { ...data, type: formattedType });
       set((state) => ({ transactions: [res.data, ...state.transactions] }));
     } catch (error) {
       console.error(error);
@@ -150,6 +179,50 @@ const useStore = create((set, get) => ({
       }));
     } catch (error) {
       console.error(error);
+    }
+  },
+
+  exportBackup: () => {
+    const { settings, categories, transactions } = get();
+    const backupData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      settings,
+      categories,
+      transactions
+    };
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(backupData, null, 2)
+    )}`;
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', jsonString);
+    downloadAnchor.setAttribute('download', `expense_ledger_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  },
+
+  restoreBackup: async (backupObject) => {
+    try {
+      if (backupObject.settings) {
+        await get().updateSettings(backupObject.settings);
+      }
+      if (Array.isArray(backupObject.categories)) {
+        for (const cat of backupObject.categories) {
+          const formattedType = cat.type ? (cat.type.charAt(0).toUpperCase() + cat.type.slice(1).toLowerCase()) : 'Expense';
+          await api.post('/categories', { name: cat.name, type: formattedType, color: cat.color, budget: cat.budget });
+        }
+        await get().fetchCategories();
+      }
+      if (Array.isArray(backupObject.transactions)) {
+        for (const tx of backupObject.transactions) {
+          await api.post('/transactions', tx);
+        }
+        await get().fetchTransactions();
+      }
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message || 'Failed to restore backup' };
     }
   }
 }));

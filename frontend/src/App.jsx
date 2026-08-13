@@ -60,11 +60,11 @@ function App() {
 
   const renderView = () => {
     switch (activeView) {
-      case 'Overview': return <Overview />;
+      case 'Overview': return <Overview onOpenAddModal={() => setIsAddModalOpen(true)} />;
       case 'DebitCredit': return <DebitCredit />;
-      case 'Bills': return <Bills />;
+      case 'Bills': return <Bills onOpenAddModal={() => setIsAddModalOpen(true)} />;
       case 'Settings': return <SettingsView />;
-      default: return <Overview />;
+      default: return <Overview onOpenAddModal={() => setIsAddModalOpen(true)} />;
     }
   };
 
