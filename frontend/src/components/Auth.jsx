@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
-import { Lock, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Lock } from 'lucide-react';
 
 const Auth = () => {
   const { isSetupComplete, checkSetup, login, setup, isLocked } = useStore();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, isSetupComplete } = useStore();
+
+  useEffect(() => {
+    checkSetup();
+  }, [checkSetup]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
     try {
-      await login(password);
+      if (!isSetupComplete) {
+        const res = await setup(password);
+        if (!res.success) setError(res.message);
+        else setPassword('');
+      } else {
+        const res = await login(password);
+        if (!res.success) setError(res.message);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     }
