@@ -77,13 +77,34 @@ const useStore = create((set, get) => ({
 
   categories: [],
   transactions: [],
-  settings: { currency: 'BDT', theme: 'dark' },
+  settings: { currency: 'BDT', theme: localStorage.getItem('theme') || 'dark' },
+
+  toggleTheme: async () => {
+    const currentTheme = get().settings?.theme || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    set((state) => ({
+      settings: { ...state.settings, theme: newTheme }
+    }));
+    try {
+      await api.put('/settings', { theme: newTheme });
+    } catch (err) {
+      console.error(err);
+    }
+  },
 
   fetchSettings: async () => {
     try {
       const res = await api.get('/settings');
-      set({ settings: res.data || { currency: 'BDT', theme: 'dark' } });
-      if (res.data?.theme === 'dark') {
+      const theme = res.data?.theme || localStorage.getItem('theme') || 'dark';
+      set({ settings: res.data || { currency: 'BDT', theme } });
+      localStorage.setItem('theme', theme);
+      if (theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
@@ -97,10 +118,13 @@ const useStore = create((set, get) => ({
     try {
       const res = await api.put('/settings', newSettings);
       set({ settings: res.data });
-      if (res.data.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
+      if (res.data.theme) {
+        localStorage.setItem('theme', res.data.theme);
+        if (res.data.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       }
     } catch (error) {
       console.error(error);

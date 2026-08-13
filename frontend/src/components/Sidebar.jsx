@@ -1,10 +1,11 @@
 import React from 'react';
 import useStore from '../store/useStore';
-import { LayoutGrid, Wallet, ReceiptText, Settings, X, Lock, LogOut } from 'lucide-react';
+import { LayoutGrid, Wallet, ReceiptText, Settings, X, Lock, LogOut, Sun, Moon } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { activeView, setActiveView, lockApp, logout } = useStore();
+  const { activeView, setActiveView, lockApp, logout, settings, toggleTheme } = useStore();
 
+  const isDark = settings?.theme === 'dark';
   const menuItems = [
     { id: 'Overview', label: 'Overview', icon: LayoutGrid },
     { id: 'DebitCredit', label: 'Debit & Credit', icon: Wallet },
@@ -59,6 +60,19 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="p-4 mt-auto border-t border-border flex flex-col gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center justify-between px-4 py-2.5 rounded-xl text-secondary-foreground font-medium text-sm hover:bg-secondary hover:text-foreground transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
+              <span>{isDark ? 'Light Theme' : 'Dark Theme'}</span>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-secondary-foreground">
+              {isDark ? 'Dark' : 'Light'}
+            </span>
+          </button>
+
           <button
             onClick={() => {
               lockApp();

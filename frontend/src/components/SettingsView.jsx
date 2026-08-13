@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
-import { Trash2, Plus, FileDown, DownloadCloud, UploadCloud, Check } from 'lucide-react';
+import { Trash2, Plus, FileDown, DownloadCloud, UploadCloud, Check, Sun, Moon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, isSameMonth } from 'date-fns';
@@ -13,6 +13,7 @@ const SettingsView = () => {
     deleteCategory, 
     settings, 
     updateSettings,
+    toggleTheme,
     transactions,
     selectedMonth,
     exportBackup,
@@ -20,6 +21,7 @@ const SettingsView = () => {
   } = useStore();
   
   const currency = settings?.currency || 'BDT';
+  const isDark = settings?.theme === 'dark';
   const [newIncome, setNewIncome] = useState('');
   const [newExpense, setNewExpense] = useState('');
   const [localCurrency, setLocalCurrency] = useState(currency);
@@ -122,19 +124,49 @@ const SettingsView = () => {
       )}
 
       {/* Preferences */}
-      <section className="bg-card rounded-2xl p-6 border border-border shadow-sm">
-        <h3 className="text-lg font-semibold mb-4">Preferences</h3>
-        <div>
-          <label className="block text-sm text-secondary-foreground mb-1.5">Currency symbol / code</label>
-          <input 
-            type="text" 
-            value={localCurrency}
-            onChange={(e) => setLocalCurrency(e.target.value.toUpperCase())}
-            onBlur={handleCurrencyBlur}
-            className="w-full max-w-xs bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary transition-colors font-medium"
-            maxLength={5}
-            placeholder="BDT"
-          />
+      <section className="bg-card rounded-2xl p-6 border border-border shadow-sm space-y-6">
+        <h3 className="text-lg font-semibold">Preferences</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm text-secondary-foreground mb-1.5">Currency symbol / code</label>
+            <input 
+              type="text" 
+              value={localCurrency}
+              onChange={(e) => setLocalCurrency(e.target.value.toUpperCase())}
+              onBlur={handleCurrencyBlur}
+              className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-foreground focus:outline-none focus:border-primary transition-colors font-medium"
+              maxLength={5}
+              placeholder="BDT"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-secondary-foreground mb-1.5">Theme Mode</label>
+            <div className="flex bg-secondary/50 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => isDark && toggleTheme()}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-all ${
+                  !isDark ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-secondary-foreground hover:text-foreground'
+                }`}
+              >
+                <Sun size={14} className="text-amber-500" />
+                <span>Light</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => !isDark && toggleTheme()}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 transition-all ${
+                  isDark ? 'bg-card text-foreground shadow-sm ring-1 ring-border' : 'text-secondary-foreground hover:text-foreground'
+                }`}
+              >
+                <Moon size={14} className="text-primary" />
+                <span>Dark</span>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

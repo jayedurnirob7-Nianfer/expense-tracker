@@ -1,11 +1,11 @@
 import React from 'react';
-import { Menu, Plus } from 'lucide-react';
+import { Menu, Plus, Sun, Moon } from 'lucide-react';
 import useStore from '../store/useStore';
 
 const Header = ({ onOpenSidebar, onOpenAddModal }) => {
-  const { activeView } = useStore();
+  const { activeView, settings, toggleTheme } = useStore();
 
-  // Format the title depending on the view
+  const isDark = settings?.theme === 'dark';
   const title = activeView === 'DebitCredit' ? 'Debit & Credit' : activeView;
 
   return (
@@ -32,8 +32,16 @@ const Header = ({ onOpenSidebar, onOpenAddModal }) => {
             </div>
           </div>
 
-          {/* Right section: Add Transaction Button */}
-          <div className="flex items-center">
+          {/* Right section: Theme Toggle & Add Transaction Button */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 rounded-full border border-border bg-card text-foreground hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-700" />}
+            </button>
+
             <button
               onClick={onOpenAddModal}
               className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-95"
