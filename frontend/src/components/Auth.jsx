@@ -6,64 +6,57 @@ const Auth = () => {
   const { isSetupComplete, checkSetup, login, setup, isLocked } = useStore();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    checkSetup();
-  }, [checkSetup]);
+  const { login, isSetupComplete } = useStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    
-    if (!isSetupComplete) {
-      const res = await setup(password);
-      if (!res.success) setError(res.message);
-      else setPassword('');
-    } else {
-      const res = await login(password);
-      if (!res.success) setError(res.message);
+    try {
+      await login(password);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 transition-colors duration-300">
-      <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl p-8 transform transition-all">
-        <div className="flex justify-center mb-6">
-          <div className="p-4 bg-primary/10 rounded-full text-primary shadow-inner">
-            {isLocked ? <Lock size={32} /> : (!isSetupComplete ? <UserPlus size={32} /> : <LogIn size={32} />)}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card w-full max-w-md rounded-3xl p-8 border border-border shadow-2xl">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <LogIn size={28} className="text-primary" />
           </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {isSetupComplete ? 'Welcome Back' : 'Setup Required'}
+          </h1>
+          <p className="text-secondary-foreground text-sm mt-2 text-center">
+            {isSetupComplete 
+              ? 'Enter your password to access your dashboard.' 
+              : 'Please run the setup script to create your admin account.'}
+          </p>
         </div>
-        <h2 className="text-3xl font-bold text-center text-foreground mb-2">
-          {isLocked ? 'App Locked' : (!isSetupComplete ? 'Welcome' : 'Welcome Back')}
-        </h2>
-        <p className="text-center text-secondary-foreground mb-8 text-sm">
-          {isLocked ? 'Please enter your password to unlock.' : (!isSetupComplete ? 'Create a master password to protect your data.' : 'Enter your password to access your dashboard.')}
-        </p>
 
         {error && (
-          <div className="bg-destructive/10 text-destructive border border-destructive/20 p-3 rounded-lg mb-6 text-sm flex items-center justify-center">
+          <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-xl text-sm mb-6 text-center">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">Password</label>
+            <label className="block text-sm font-semibold text-secondary-foreground mb-2">Password</label>
             <input
               type="password"
-              className="w-full p-3 rounded-xl bg-background border border-border text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-shadow shadow-sm"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-background border border-border rounded-xl px-4 py-3 text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               placeholder="••••••••"
               required
-              autoFocus
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]"
+            className="w-full bg-primary text-primary-foreground font-bold py-3.5 rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 active:scale-[0.98]"
           >
-            {isLocked ? 'Unlock' : (!isSetupComplete ? 'Complete Setup' : 'Login')}
+            Login
           </button>
         </form>
       </div>

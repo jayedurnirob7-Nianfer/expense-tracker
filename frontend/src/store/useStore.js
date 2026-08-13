@@ -5,7 +5,19 @@ const useStore = create((set, get) => ({
   isAuthenticated: !!localStorage.getItem('token'),
   isLocked: false,
   isSetupComplete: true,
+  activeView: 'Overview',
+
+  setActiveView: (view) => set({ activeView: view }),
   
+  fetchData: async () => {
+    const state = get();
+    await Promise.all([
+      state.fetchSettings(),
+      state.fetchCategories(),
+      state.fetchTransactions()
+    ]);
+  },
+
   login: async (password) => {
     try {
       const res = await api.post('/auth/login', { password });
