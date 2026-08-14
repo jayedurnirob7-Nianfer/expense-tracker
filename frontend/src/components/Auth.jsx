@@ -54,7 +54,7 @@ const Auth = () => {
   const [devCodeHint, setDevCodeHint] = useState('');
 
   const googleBtnRef = useRef(null);
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '534810784499-nqllp8mu0dhljpb768trr3u80g1vuj8.apps.googleusercontent.com';
   const hasRealGoogleClientId = !!googleClientId && !googleClientId.includes('dummy') && googleClientId.includes('.apps.googleusercontent.com');
 
   useEffect(() => {
