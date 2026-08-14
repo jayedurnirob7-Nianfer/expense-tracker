@@ -17,7 +17,10 @@ const SettingsView = () => {
     transactions,
     selectedMonth,
     exportBackup,
-    restoreBackup
+    restoreBackup,
+    userProfile,
+    fetchProfile,
+    updateProfile
   } = useStore();
   
   const currency = settings?.currency || 'BDT';
@@ -25,9 +28,17 @@ const SettingsView = () => {
   const [newIncome, setNewIncome] = useState('');
   const [newExpense, setNewExpense] = useState('');
   const [localCurrency, setLocalCurrency] = useState(currency);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [editCategoryNames, setEditCategoryNames] = useState({});
   const [statusMessage, setStatusMessage] = useState('');
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    fetchProfile().then(p => {
+      if (p?.email) setRecoveryEmail(p.email);
+    });
+  }, [fetchProfile]);
 
   useEffect(() => {
     setLocalCurrency(settings?.currency || 'BDT');
@@ -244,6 +255,64 @@ const SettingsView = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* J.A.R.V.I.S. Security & Recovery Account Binding */}
+      <section className="bg-card rounded-2xl p-6 border border-border shadow-sm space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <span>J.A.R.V.I.S. Security & Google Account</span>
+          </h3>
+          <p className="text-sm text-secondary-foreground mt-0.5">
+            Bind your Google email address to enable 1-Click Google Sign-In and J.A.R.V.I.S. Emergency Password Recovery.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label className="block text-xs font-semibold text-secondary-foreground mb-1.5 uppercase tracking-wider">
+              Master Nirob's Recovery Email
+            </label>
+            <div className="flex gap-2">
+              <input 
+                type="email"
+                placeholder="master.nirob@gmail.com"
+                value={recoveryEmail}
+                onChange={(e) => setRecoveryEmail(e.target.value)}
+                className="flex-1 bg-background border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!recoveryEmail.trim()) return;
+                  setIsUpdatingProfile(true);
+                  const res = await updateProfile({ email: recoveryEmail.trim() });
+                  setIsUpdatingProfile(false);
+                  if (res.success) {
+                    setStatusMessage('Recovery email bound successfully to J.A.R.V.I.S.!');
+                    setTimeout(() => setStatusMessage(''), 3000);
+                  }
+                }}
+                disabled={isUpdatingProfile}
+                className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-all shadow-md shadow-primary/20 shrink-0"
+              >
+                {isUpdatingProfile ? 'Saving...' : 'Save Email'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-secondary/30 rounded-2xl p-4 border border-border flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-foreground">Google Account Integration</p>
+              <p className="text-[11px] text-secondary-foreground mt-0.5">
+                {userProfile?.hasGoogleLinked ? 'Connected and bound for instant login' : 'Ready to authenticate via Google button on login'}
+              </p>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${userProfile?.hasGoogleLinked ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-700/50 text-slate-400'}`}>
+              {userProfile?.hasGoogleLinked ? 'Linked' : 'Available'}
+            </span>
           </div>
         </div>
       </section>

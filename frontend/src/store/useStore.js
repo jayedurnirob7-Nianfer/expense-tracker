@@ -10,9 +10,24 @@ const useStore = create((set, get) => ({
   selectedMonth: new Date(),
 
   setActiveView: (view) => set({ activeView: view }),
-  setSelectedMonth: (date) => set({ selectedMonth: date }),
-  prevMonth: () => set((state) => ({ selectedMonth: subMonths(state.selectedMonth, 1) })),
-  nextMonth: () => set((state) => ({ selectedMonth: addMonths(state.selectedMonth, 1) })),
+  setSelectedMonth: (date) => {
+    set({ selectedMonth: date });
+    get().checkAndGenerateMonthlyRecurringBills(date);
+  },
+  prevMonth: () => {
+    set((state) => {
+      const newMonth = subMonths(state.selectedMonth, 1);
+      setTimeout(() => get().checkAndGenerateMonthlyRecurringBills(newMonth), 0);
+      return { selectedMonth: newMonth };
+    });
+  },
+  nextMonth: () => {
+    set((state) => {
+      const newMonth = addMonths(state.selectedMonth, 1);
+      setTimeout(() => get().checkAndGenerateMonthlyRecurringBills(newMonth), 0);
+      return { selectedMonth: newMonth };
+    });
+  },
   
   fetchData: async () => {
     const state = get();
@@ -59,10 +74,84 @@ const useStore = create((set, get) => ({
     }
   },
 
+  loginWithGoogle: async (credentialOrData) => {
+    try {
+      const res = await api.post('/auth/google', credentialOrData);
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+      set({ 
+        isAuthenticated: true, 
+        isLocked: false, 
+        isSetupComplete: true,
+        userProfile: res.data.user || null
+      });
+      get().fetchData();
+      return { success: true };
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Google authentication failed';
+      return { success: false, message: msg };
+    }
+  },
+
+  requestEmergencyRecovery: async (email) => {
+    try {
+      const res = await api.post('/auth/request-recovery', { email });
+      return { success: true, data: res.data };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Recovery request failed',
+        needsEmailInput: error.response?.data?.needsEmailInput 
+      };
+    }
+  },
+
+  verifyEmergencyRecovery: async (otp, newPassword) => {
+    try {
+      const res = await api.post('/auth/verify-recovery', { otp, newPassword });
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+      set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
+      get().fetchData();
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Recovery verification failed' 
+      };
+    }
+  },
+
+  fetchProfile: async () => {
+    try {
+      const res = await api.get('/auth/profile');
+      set({ userProfile: res.data });
+      return res.data;
+    } catch (error) {
+      console.error('Failed to fetch profile', error);
+    }
+  },
+
+  updateProfile: async (data) => {
+    try {
+      const res = await api.put('/auth/profile', data);
+      set((state) => ({ userProfile: { ...state.userProfile, ...res.data.user } }));
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Failed to update profile' };
+    }
+  },
+
   checkSetup: async () => {
     try {
       const res = await api.get('/auth/check-setup');
-      set({ isSetupComplete: res.data.isSetup });
+      set({ 
+        isSetupComplete: res.data.isSetup,
+        hasBoundEmail: res.data.hasBoundEmail,
+        maskedEmail: res.data.maskedEmail
+      });
     } catch (error) {
       console.error('Failed to check setup', error);
     }
@@ -70,10 +159,14 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('token');
-    set({ isAuthenticated: false, isLocked: false });
+    set({ isAuthenticated: false, isLocked: false, userProfile: null });
   },
 
   lockApp: () => set({ isLocked: true }),
+
+  userProfile: null,
+  hasBoundEmail: false,
+  maskedEmail: '',
 
   categories: [],
   transactions: [],
@@ -177,8 +270,65 @@ const useStore = create((set, get) => ({
     try {
       const res = await api.get('/transactions', { params: filters });
       set({ transactions: res.data || [] });
+      setTimeout(() => get().checkAndGenerateMonthlyRecurringBills(get().selectedMonth), 0);
     } catch (error) {
       console.error(error);
+    }
+  },
+
+  checkAndGenerateMonthlyRecurringBills: async (targetDate = get().selectedMonth) => {
+    const { transactions } = get();
+    // Identify recurring bill templates
+    const recurringTemplates = transactions.filter(t => t.isRecurring);
+    if (recurringTemplates.length === 0) return;
+
+    // Deduplicate templates by description/notes + category ID
+    const uniqueTemplatesMap = new Map();
+    recurringTemplates.forEach(t => {
+      const catId = t.category?._id || t.category || '';
+      const key = `${(t.notes || '').toLowerCase()}_${catId}`;
+      if (!uniqueTemplatesMap.has(key)) {
+        uniqueTemplatesMap.set(key, t);
+      }
+    });
+
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth();
+
+    for (const [key, t] of uniqueTemplatesMap.entries()) {
+      // Check if a bill for this template already exists in the target month
+      const existsInTargetMonth = transactions.some(tx => {
+        const d = new Date(tx.date);
+        const txCatId = tx.category?._id || tx.category || '';
+        const matchKey = `${(tx.notes || '').toLowerCase()}_${txCatId}`;
+        return matchKey === key && d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+      });
+
+      if (!existsInTargetMonth) {
+        const origDay = new Date(t.date).getDate();
+        const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const validDay = Math.min(origDay, daysInMonth);
+        const newBillDate = new Date(targetYear, targetMonth, validDay);
+
+        const newBillData = {
+          amount: t.amount,
+          date: newBillDate,
+          category: t.category?._id || t.category,
+          type: 'Expense',
+          notes: t.notes,
+          fundSource: t.fundSource || 'Salary',
+          isRecurring: true,
+          status: 'Pending',
+          isEssential: true
+        };
+
+        try {
+          const res = await api.post('/transactions', newBillData);
+          set((state) => ({ transactions: [res.data, ...state.transactions] }));
+        } catch (err) {
+          console.error('Failed auto-generating monthly bill:', err);
+        }
+      }
     }
   },
 

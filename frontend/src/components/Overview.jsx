@@ -1,8 +1,74 @@
-import React, { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, ArrowDownRight, ArrowUpRight, Plus, Trash2, RefreshCcw } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
+import EditTransactionModal from './EditTransactionModal';
+import MonthNavigator from './MonthNavigator';
+
+const CustomDailyTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0]?.payload;
+    const income = Number(data?.Income || 0);
+    const expense = Number(data?.Expense || 0);
+    const net = income - expense;
+    const currency = useStore.getState().settings?.currency || 'BDT';
+    return (
+      <div className="bg-[#0e1621]/95 backdrop-blur-md border border-[#1e293b] rounded-2xl p-3.5 shadow-2xl text-xs space-y-2 min-w-[190px] pointer-events-none animate-in fade-in zoom-in-95 duration-150 text-foreground">
+        <div className="font-bold text-slate-200 border-b border-[#1e293b] pb-1.5 flex items-center justify-between">
+          <span>{data?.dateStr || `Day ${data?.day}`}</span>
+          <span className="text-[10px] text-slate-400 font-mono bg-slate-800/80 px-1.5 py-0.5 rounded">Day {data?.day}</span>
+        </div>
+        <div className="space-y-1.5 pt-0.5">
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Income:
+            </span>
+            <span className="font-bold text-white">
+              {currency} {income.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+              Expense:
+            </span>
+            <span className="font-bold text-white">
+              {currency} {expense.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          {(income > 0 || expense > 0) && (
+            <div className="pt-1.5 mt-1 border-t border-[#1e293b] flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Net Flow:</span>
+              <span className={`font-bold ${net >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {net >= 0 ? '+' : ''}{currency} {net.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomPieTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const currency = useStore.getState().settings?.currency || 'BDT';
+    return (
+      <div className="bg-[#0e1621]/95 backdrop-blur-md border border-[#1e293b] rounded-xl px-3.5 py-2.5 shadow-2xl text-xs flex items-center gap-3 animate-in fade-in zoom-in-95 duration-150">
+        <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: data.payload?.color }} />
+        <div>
+          <p className="text-slate-300 font-medium">{data.name}</p>
+          <p className="font-bold text-white text-sm">{currency} {Number(data.value).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   const { 
@@ -16,21 +82,81 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
     updateTransaction 
   } = useStore();
 
+  const [editingItem, setEditingItem] = useState(null);
+  const [selectedBillIds, setSelectedBillIds] = useState([]);
+
   const currency = settings?.currency || 'BDT';
 
-  // Transactions for the selected month
-  const monthlyTransactions = useMemo(() => {
+  // Helper to check if a pending bill is past due date (e.g. 10th or date < today)
+  const isOverdue = (bill) => {
+    if (bill.status !== 'Pending') return false;
+    const now = new Date();
+    const billDate = new Date(bill.date);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const billStart = new Date(billDate.getFullYear(), billDate.getMonth(), billDate.getDate());
+    
+    if (billStart < todayStart) return true;
+    if (isSameMonth(now, billDate) && (now.getDate() >= billDate.getDate() || now.getDate() >= 10)) return true;
+    return false;
+  };
+
+  // Essential bills for selected month - ONLY recurring/essential items!
+  const essentialBills = useMemo(() => {
     return transactions.filter(t => {
       const d = new Date(t.date);
-      return isSameMonth(d, selectedMonth);
+      return isSameMonth(d, selectedMonth) && (t.isRecurring || t.isEssential);
     });
   }, [transactions, selectedMonth]);
 
-  // Income, Expenses, Balance for selected month
+  const pendingBills = useMemo(() => {
+    return essentialBills.filter(b => b.status === 'Pending');
+  }, [essentialBills]);
+
+  const selectedTotalAmount = useMemo(() => {
+    return essentialBills
+      .filter(b => selectedBillIds.includes(b._id))
+      .reduce((sum, b) => sum + Number(b.amount || 0), 0);
+  }, [essentialBills, selectedBillIds]);
+
+  const toggleSelectBill = (id) => {
+    setSelectedBillIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllPending = () => {
+    if (selectedBillIds.length === pendingBills.length && pendingBills.length > 0) {
+      setSelectedBillIds([]);
+    } else {
+      setSelectedBillIds(pendingBills.map(b => b._id));
+    }
+  };
+
+  const handleBatchPaySelected = async () => {
+    if (selectedBillIds.length === 0) return;
+    await Promise.all(
+      selectedBillIds.map(id => updateTransaction(id, { status: 'Paid' }))
+    );
+    setSelectedBillIds([]);
+  };
+
+  const overdueBills = useMemo(() => {
+    return essentialBills.filter(b => b.status === 'Pending' && isOverdue(b));
+  }, [essentialBills]);
+
+  // Completed Recent Transactions (Income & Paid Expenses only - pending bills stay in Essential Bills)
+  const recentTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const d = new Date(t.date);
+      return isSameMonth(d, selectedMonth) && (t.type === 'Income' || t.status === 'Paid');
+    });
+  }, [transactions, selectedMonth]);
+
+  // Income (Credit), Expenses (Debit), Balance for selected month
   const { totalIncome, totalExpense, balance } = useMemo(() => {
     let inc = 0;
     let exp = 0;
-    monthlyTransactions.forEach(t => {
+    recentTransactions.forEach(t => {
       if (t.type === 'Income') inc += Number(t.amount);
       else exp += Number(t.amount);
     });
@@ -39,15 +165,25 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
       totalExpense: exp,
       balance: inc - exp
     };
-  }, [monthlyTransactions]);
+  }, [recentTransactions]);
 
-  // Overall Total Balance (across all months)
+  const recentIncomeTransactions = useMemo(() => {
+    return recentTransactions.filter(t => t.type === 'Income');
+  }, [recentTransactions]);
+
+  const recentExpenseTransactions = useMemo(() => {
+    return recentTransactions.filter(t => t.type === 'Expense');
+  }, [recentTransactions]);
+
+  // Overall Total Balance (across all completed transactions)
   const overallBalance = useMemo(() => {
     let inc = 0;
     let exp = 0;
     transactions.forEach(t => {
-      if (t.type === 'Income') inc += Number(t.amount);
-      else exp += Number(t.amount);
+      if (t.type === 'Income' || t.status === 'Paid') {
+        if (t.type === 'Income') inc += Number(t.amount);
+        else exp += Number(t.amount);
+      }
     });
     return inc - exp;
   }, [transactions]);
@@ -55,7 +191,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   // Category breakdown for pie chart
   const categoryPieData = useMemo(() => {
     const map = {};
-    monthlyTransactions.forEach(t => {
+    recentTransactions.forEach(t => {
       if (t.type === 'Expense') {
         const catName = t.category?.name || 'Uncategorized';
         map[catName] = (map[catName] || 0) + Number(t.amount);
@@ -70,7 +206,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         color: catObj?.color || '#8884d8'
       };
     }).sort((a, b) => b.value - a.value);
-  }, [monthlyTransactions, categories]);
+  }, [recentTransactions, categories]);
 
   // Daily breakdown bar chart data for selected month
   const dailyHistory = useMemo(() => {
@@ -86,7 +222,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
       let inc = 0;
       let exp = 0;
 
-      monthlyTransactions.forEach(t => {
+      recentTransactions.forEach(t => {
         const d = new Date(t.date);
         if (isSameDay(d, currentDayDate)) {
           if (t.type === 'Income') inc += Number(t.amount);
@@ -103,57 +239,62 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
     }
 
     return days;
-  }, [monthlyTransactions, selectedMonth]);
-
-  // Essential bills summary for selected month
-  const bills = useMemo(() => {
-    return monthlyTransactions.filter(t => t.isRecurring || t.type === 'Expense');
-  }, [monthlyTransactions]);
+  }, [recentTransactions, selectedMonth]);
 
   const paidBillsAmount = useMemo(() => {
-    return bills.filter(b => b.status === 'Paid').reduce((sum, b) => sum + Number(b.amount), 0);
-  }, [bills]);
+    return essentialBills.filter(b => b.status === 'Paid').reduce((sum, b) => sum + Number(b.amount), 0);
+  }, [essentialBills]);
 
   const totalBillsAmount = useMemo(() => {
-    return bills.reduce((sum, b) => sum + Number(b.amount), 0);
-  }, [bills]);
+    return essentialBills.reduce((sum, b) => sum + Number(b.amount), 0);
+  }, [essentialBills]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       
-      {/* Month Selector */}
-      <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex items-center justify-between">
-        <button 
-          onClick={prevMonth}
-          className="p-2 hover:bg-secondary rounded-xl text-secondary-foreground hover:text-foreground transition-colors"
-          title="Previous Month"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <span className="font-bold text-[15px]">{format(selectedMonth, 'MMMM yyyy')}</span>
-        <button 
-          onClick={nextMonth}
-          className="p-2 hover:bg-secondary rounded-xl text-secondary-foreground hover:text-foreground transition-colors"
-          title="Next Month"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
+      {/* Interactive Month Selector with Full Month/Year Picker */}
+      <MonthNavigator />
+
+      {/* Overdue Unpaid Essential Bill Alert Banner */}
+      {overdueBills.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-400 shadow-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-amber-200 flex items-center gap-2">
+                <span>⚠️ Unpaid Essential Bill Reminder ({overdueBills.length})</span>
+              </h4>
+              <p className="text-xs text-amber-400/90 mt-0.5">
+                {overdueBills.map(b => `${b.notes || b.category?.name || 'Bill'} (${currency} ${Number(b.amount).toLocaleString()})`).join(', ')} past due date!
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {overdueBills.map(b => (
+              <button
+                key={b._id}
+                onClick={() => updateTransaction(b._id, { status: 'Paid' })}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs transition-colors shadow-md flex items-center gap-1.5"
+              >
+                <CheckCircle2 size={14} />
+                <span>Pay {b.notes || 'Bill'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Total Balance Card */}
-      <div className="bg-card rounded-2xl p-6 border border-border shadow-sm space-y-1">
+      <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
         <div className="flex items-center gap-2 text-secondary-foreground uppercase tracking-wider text-xs font-bold mb-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Total Balance
         </div>
-        <div className="flex items-baseline justify-between">
-          <h2 className={`text-4xl font-black tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-            {currency} {overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </h2>
-          <span className="text-xs text-secondary-foreground">
-            Monthly Net: {balance >= 0 ? '+' : ''}{currency} {balance.toLocaleString()}
-          </span>
-        </div>
+        <h2 className={`text-4xl font-black tracking-tight ${overallBalance >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+          {currency} {overallBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </h2>
       </div>
 
       {/* Credit / Debit Mini Cards */}
@@ -180,10 +321,12 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Where the money goes */}
+        {/* Category Breakdown Pie Chart */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
-          <h3 className="font-bold text-[15px] mb-0.5">Where the money goes</h3>
-          <p className="text-xs text-secondary-foreground mb-4">Top expense categories for {format(selectedMonth, 'MMM yyyy')}</p>
+          <div className="mb-4">
+            <h3 className="font-bold text-[15px] text-foreground">Where the money goes</h3>
+            <p className="text-xs text-secondary-foreground mt-0.5">Top expense categories for {format(selectedMonth, 'MMM yyyy')}</p>
+          </div>
           <div className="flex-1 flex items-center justify-center">
             {categoryPieData.length > 0 ? (
               <ResponsiveContainer width="100%" height={180}>
@@ -201,7 +344,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(val) => `${currency} ${Number(val).toLocaleString()}`} />
+                  <Tooltip content={<CustomPieTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -210,117 +353,297 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
           </div>
         </div>
 
-        {/* Daily Activity for selected month */}
+        {/* Daily Activity Full-Month Candles */}
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
-          <h3 className="font-bold text-[15px] mb-0.5">Daily activity</h3>
-          <p className="text-xs text-secondary-foreground mb-4">Daily candles for {format(selectedMonth, 'MMMM yyyy')}</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-bold text-[15px] text-foreground">Daily Activity</h3>
+              <p className="text-xs text-secondary-foreground mt-0.5">Full month candles for {format(selectedMonth, 'MMMM yyyy')}</p>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] font-semibold">
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                Income
+              </span>
+              <span className="flex items-center gap-1.5 text-rose-400">
+                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                Expense
+              </span>
+            </div>
+          </div>
+          
           <div className="flex-1 flex items-center justify-center">
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={dailyHistory} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <BarChart data={dailyHistory} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={1}>
                 <XAxis 
                   dataKey="day" 
                   tickLine={false} 
-                  axisLine={false} 
-                  tick={{ fontSize: 10, fill: '#888' }}
+                  axisLine={{ stroke: '#1e293b' }} 
+                  tick={{ fontSize: 10, fill: '#64748b' }}
                   interval={dailyHistory.length > 20 ? 2 : 0}
                 />
                 <YAxis hide />
                 <Tooltip 
-                  labelFormatter={(dayLabel, items) => items[0]?.payload?.dateStr || `Day ${dayLabel}`}
-                  formatter={(val, name) => [`${currency} ${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 })}`, name]} 
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)', radius: 6 }}
+                  content={<CustomDailyTooltip />}
                 />
-                <Bar dataKey="Income" fill="#10b981" radius={[3, 3, 0, 0]} barSize={6} />
-                <Bar dataKey="Expense" fill="#ef4444" radius={[3, 3, 0, 0]} barSize={6} />
+                <Bar dataKey="Income" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={6} />
+                <Bar dataKey="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={6} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Transactions section for selected month */}
-      <div className="bg-card rounded-2xl p-6 border border-border shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold">Recent Transactions</h3>
-            <p className="text-xs text-secondary-foreground">Showing activity for {format(selectedMonth, 'MMMM yyyy')}</p>
+      {/* Dual-Card Side-by-Side Recent Transactions Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Left Column: Credit — money in */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <ArrowDownRight size={18} className="text-emerald-400" />
+              <h3 className="font-bold text-sm text-foreground">Credit — money in</h3>
+            </div>
+            <span className="font-bold text-sm text-emerald-400">
+              {currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
           </div>
-          <button
-            onClick={onOpenAddModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
-          >
-            <Plus size={14} />
-            <span>Add Transaction</span>
-          </button>
-        </div>
 
-        {monthlyTransactions.length > 0 ? (
-          <div className="divide-y divide-border">
-            {monthlyTransactions.map((t) => (
-              <div key={t._id} className="py-3 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center ${t.type === 'Income' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                    {t.type === 'Income' ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
-                  </div>
+          <div className="bg-card rounded-2xl border border-border p-2 divide-y divide-border min-h-[140px] flex flex-col justify-start shadow-sm">
+            {recentIncomeTransactions.length > 0 ? (
+              recentIncomeTransactions.map((t) => (
+                <div
+                  key={t._id}
+                  onClick={() => setEditingItem(t)}
+                  className="p-3 hover:bg-secondary/30 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-3 group"
+                >
                   <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm text-foreground">{t.notes || t.category?.name || 'Transaction'}</p>
-                      {t.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
-                    </div>
-                    <p className="text-xs text-secondary-foreground">
-                      {format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Uncategorized'}
+                    <p className="font-semibold text-sm text-foreground group-hover:text-emerald-400 transition-colors">
+                      {t.notes || t.category?.name || 'Income'}
+                    </p>
+                    <p className="text-xs text-secondary-foreground mt-0.5">
+                      {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
                     </p>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <span className={`font-bold text-sm ${t.type === 'Income' ? 'text-green-500' : 'text-foreground'}`}>
-                    {t.type === 'Income' ? '+' : '-'}{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  <span className="font-bold text-sm text-emerald-400 whitespace-nowrap">
+                    +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
-
-                  <button 
-                    onClick={() => updateTransaction(t._id, { status: t.status === 'Paid' ? 'Pending' : 'Paid' })}
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border ${t.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}
-                  >
-                    {t.status}
-                  </button>
-
-                  <button 
-                    onClick={() => deleteTransaction(t._id)}
-                    className="p-1 text-secondary-foreground hover:text-destructive rounded-lg transition"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
                 </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-xs text-secondary-foreground my-auto">
+                No income entries for {format(selectedMonth, 'MMMM yyyy')}.
               </div>
-            ))}
+            )}
           </div>
-        ) : (
-          <div className="py-8 text-center text-secondary-foreground text-sm">
-            No transactions found for {format(selectedMonth, 'MMMM yyyy')}.
+        </div>
+
+        {/* Right Column: Debit — costs & bills */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <ArrowUpRight size={18} className="text-rose-400" />
+              <h3 className="font-bold text-sm text-foreground">Debit — costs & bills</h3>
+            </div>
+            <span className="font-bold text-sm text-foreground">
+              {currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </span>
           </div>
-        )}
+
+          <div className="bg-card rounded-2xl border border-border p-2 divide-y divide-border min-h-[140px] flex flex-col justify-start shadow-sm">
+            {recentExpenseTransactions.length > 0 ? (
+              recentExpenseTransactions.map((t) => (
+                <div
+                  key={t._id}
+                  onClick={() => setEditingItem(t)}
+                  className="p-3 hover:bg-secondary/30 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-3 group"
+                >
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
+                        {t.notes || t.category?.name || 'Expense'}
+                      </p>
+                      {t.isRecurring && <RefreshCcw size={12} className="text-primary shrink-0" title="Recurring" />}
+                    </div>
+                    <p className="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-1.5">
+                      <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
+                      {t.fundSource && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Paid from: {t.fundSource}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <span className="font-bold text-sm text-foreground whitespace-nowrap">
+                    -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-xs text-secondary-foreground my-auto">
+                No paid expenses for {format(selectedMonth, 'MMMM yyyy')}.
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Essential Bills Section */}
       <div className="pt-2 space-y-4">
-        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm flex items-center justify-between">
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold mb-1">Essential bills</h3>
             <p className="text-sm text-secondary-foreground mb-1">
-              {currency} {paidBillsAmount.toLocaleString()} paid of {currency} {totalBillsAmount.toLocaleString()}
+              {currency} {paidBillsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} paid of {currency} {totalBillsAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
             <p className="text-[13px] text-secondary-foreground/70">Cycle: {format(selectedMonth, 'MMMM yyyy')}</p>
           </div>
+
           <button 
             onClick={onOpenAddBillModal || onOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all shadow-md shadow-primary/20 shrink-0"
           >
             <Plus size={16} />
             <span>Add bill</span>
           </button>
         </div>
+
+        {/* Multi-Select Toolbar for Pending Bills */}
+        {pendingBills.length > 0 && (
+          <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input 
+                type="checkbox"
+                id="selectAllPendingOverview"
+                checked={selectedBillIds.length > 0 && selectedBillIds.length === pendingBills.length}
+                onChange={toggleSelectAllPending}
+                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0"
+              />
+              <span className="text-xs font-semibold text-foreground">
+                {selectedBillIds.length > 0 
+                  ? `${selectedBillIds.length} of ${pendingBills.length} pending bills selected` 
+                  : `Select all pending bills (${pendingBills.length})`}
+              </span>
+            </label>
+
+            {selectedBillIds.length > 0 && (
+              <button
+                type="button"
+                onClick={handleBatchPaySelected}
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 animate-in fade-in zoom-in-95"
+              >
+                <CheckCircle2 size={16} />
+                <span>Mark Selected as Paid ({selectedBillIds.length}) • {currency} {selectedTotalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Essential Bills List */}
+        {essentialBills.length > 0 ? (
+          <div className="bg-card rounded-2xl p-4 border border-border shadow-sm divide-y divide-border space-y-2">
+            {essentialBills.map(b => {
+              const overdue = isOverdue(b);
+              const isSelected = selectedBillIds.includes(b._id);
+              return (
+                <div 
+                  key={b._id} 
+                  onClick={() => setEditingItem(b)}
+                  className={`pt-3 first:pt-0 flex items-center justify-between gap-4 p-3 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all ${
+                    isSelected ? 'bg-emerald-500/10 border border-emerald-500/30' : overdue ? 'bg-amber-500/5 border border-amber-500/30' : ''
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {b.status === 'Pending' ? (
+                      <input 
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelectBill(b._id);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0"
+                        title="Select to pay"
+                      />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={12} />
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm text-foreground hover:text-primary transition-colors">{b.notes || b.category?.name || 'Bill'}</p>
+                        {b.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
+                        {overdue && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                            ⚠️ Overdue
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
+                        <span>Due: {format(new Date(b.date), 'MMM dd, yyyy')} · {b.category?.name || 'Bill'}</span>
+                        {b.fundSource && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            Paid from: {b.fundSource}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <span className="font-bold text-sm text-foreground">
+                      {currency} {Number(b.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
+                    {b.status === 'Pending' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateTransaction(b._id, { status: 'Paid' });
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-black border-transparent shadow-emerald-500/20 transition-all"
+                        title="Click to Mark as Paid"
+                      >
+                        <Clock size={14} />
+                        <span>Mark as Paid</span>
+                      </button>
+                    )}
+                    {b.status === 'Paid' && (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold border bg-green-500/10 text-green-500 border-green-500/20 flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        <span>Paid</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-card rounded-2xl p-8 border border-border shadow-sm flex flex-col items-center justify-center text-center">
+            <h4 className="text-base font-bold mb-2">No essential bills this month</h4>
+            <p className="text-sm text-secondary-foreground mb-4">Add your fixed monthly obligations like rent, utilities, and internet.</p>
+            <button 
+              onClick={onOpenAddBillModal || onOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+            >
+              <Plus size={16} />
+              <span>Add bill</span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <EditTransactionModal 
+          item={editingItem} 
+          onClose={() => setEditingItem(null)} 
+        />
+      )}
 
     </div>
   );

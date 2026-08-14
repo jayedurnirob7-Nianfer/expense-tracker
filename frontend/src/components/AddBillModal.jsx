@@ -1,17 +1,33 @@
 import React, { useState } from 'react';
 import useStore from '../store/useStore';
-import { X, ChevronDown, Check } from 'lucide-react';
+import { X, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { format } from 'date-fns';
 
 const AddBillModal = ({ onClose }) => {
-  const { categories, addCategory, addTransaction } = useStore();
+  const { categories, transactions, addCategory, addTransaction } = useStore();
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [dueDay, setDueDay] = useState('1');
+  const [dueDate, setDueDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isEssential, setIsEssential] = useState(true);
 
+  // Fund / Paid From state - automatically includes all credited income transactions and categories
+  const creditCategories = categories.filter(c => c.type?.toLowerCase() === 'income').map(c => c.name);
+  const creditTransactionFunds = transactions
+    .filter(t => t.type === 'Income')
+    .map(t => t.notes?.trim() || t.category?.name)
+    .filter(Boolean);
+
+  const baseFunds = ['Salary', ...creditTransactionFunds, ...creditCategories];
+  const [customFunds, setCustomFunds] = useState([]);
+  const availableFunds = Array.from(new Set([...baseFunds, ...customFunds])).filter(Boolean);
+  const [fundSource, setFundSource] = useState(availableFunds[0] || 'Salary');
+  const [showAddFund, setShowAddFund] = useState(false);
+  const [newFundName, setNewFundName] = useState('');
+
   // Dropdown state & inline add category state
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
@@ -31,23 +47,30 @@ const AddBillModal = ({ onClose }) => {
     }
   };
 
+  const handleAddNewFund = () => {
+    if (!newFundName.trim()) return;
+    const trimmed = newFundName.trim();
+    if (!customFunds.includes(trimmed)) {
+      setCustomFunds(prev => [...prev, trimmed]);
+    }
+    setFundSource(trimmed);
+    setNewFundName('');
+    setShowAddFund(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !amount) return;
-
-    // Create a transaction date set to the due day of current month
-    const now = new Date();
-    const dayNum = Math.min(Math.max(parseInt(dueDay, 10) || 1, 1), 31);
-    const billDate = new Date(now.getFullYear(), now.getMonth(), dayNum);
 
     const catId = currentCategory ? currentCategory._id : (expenseCategories[0]?._id || '');
 
     await addTransaction({
       amount: Number(amount),
-      date: billDate,
+      date: dueDate || new Date(),
       category: catId,
       type: 'Expense',
       notes: name,
+      fundSource: fundSource || 'Salary',
       isRecurring: true,
       status: 'Pending',
       isEssential
@@ -57,8 +80,14 @@ const AddBillModal = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0e1621] border border-[#1e293b] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-foreground">
+    <div 
+      className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-[#0e1621] border border-[#1e293b] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-foreground"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
         <div className="flex justify-between items-start p-6 pb-2">
@@ -75,10 +104,10 @@ const AddBillModal = ({ onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-semibold text-white mb-2">Name</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Name</label>
             <input 
               type="text" 
               required
@@ -89,10 +118,10 @@ const AddBillModal = ({ onClose }) => {
             />
           </div>
 
-          {/* Amount & Due day */}
+          {/* Amount & Due date */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">Amount</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Amount</label>
               <input 
                 type="number" 
                 step="0.01"
@@ -104,69 +133,52 @@ const AddBillModal = ({ onClose }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">Due day of month (1–31)</label>
-              <input 
-                type="number" 
-                min="1" 
-                max="31"
-                required
-                placeholder="1"
-                className="w-full bg-[#131d2b] border border-[#1e293b] rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors text-sm font-medium"
-                value={dueDay}
-                onChange={(e) => setDueDay(e.target.value)}
-              />
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Due date</label>
+              <div className="relative">
+                <DatePicker
+                  selected={dueDate}
+                  onChange={(d) => setDueDate(d)}
+                  popperPlacement="bottom-start"
+                  customInput={
+                    <button
+                      type="button"
+                      className="w-full bg-[#131d2b] border border-[#1e293b] rounded-xl px-3 py-3 pl-9 text-white text-xs font-medium flex items-center text-left hover:border-slate-600 transition-colors"
+                    >
+                      {format(dueDate || new Date(), 'MMM d, yyyy')}
+                    </button>
+                  }
+                />
+                <CalendarIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              </div>
             </div>
           </div>
 
           {/* Category Selector */}
           <div>
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-sm font-semibold text-white">Category</label>
-              <div className="flex items-center gap-2 text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setShowAddCategory(!showAddCategory)}
-                  className="text-emerald-400 hover:text-emerald-300 transition-colors"
-                >
-                  {showAddCategory ? 'Cancel' : 'Edit  + New'}
-                </button>
-              </div>
-            </div>
-
-            {/* Custom Dropdown Trigger */}
-            <div className="relative">
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Category</label>
               <button
                 type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full bg-[#131d2b] border border-[#1e293b] rounded-xl px-4 py-3 text-white flex justify-between items-center text-sm font-medium hover:border-slate-600 transition-colors"
+                onClick={() => setShowAddCategory(!showAddCategory)}
+                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
               >
-                <span>{currentCategory?.name || 'Food & Dining'}</span>
-                <ChevronDown size={16} className="text-slate-400" />
+                {showAddCategory ? 'Cancel' : '+ New Category'}
               </button>
+            </div>
 
-              {/* Dropdown Menu */}
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-full bg-[#131d2b] border border-[#1e293b] rounded-xl shadow-2xl z-20 overflow-hidden py-1 max-h-56 overflow-y-auto">
-                  {expenseCategories.map(cat => (
-                    <button
-                      key={cat._id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory(cat._id);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between transition-colors ${
-                        (currentCategory?._id === cat._id) 
-                          ? 'bg-[#1e293b] text-white font-medium' 
-                          : 'text-slate-300 hover:bg-[#1a2436] hover:text-white'
-                      }`}
-                    >
-                      <span>{cat.name}</span>
-                      {(currentCategory?._id === cat._id) && <Check size={16} className="text-white" />}
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-[#131d2b] border border-[#1e293b] rounded-xl px-4 py-3 pr-10 text-white appearance-none outline-none focus:border-emerald-500 text-sm font-medium transition-colors cursor-pointer"
+              >
+                {expenseCategories.map(cat => (
+                  <option key={cat._id} value={cat._id} className="bg-[#0e1621] text-white py-2">
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
 
             {/* Inline New Category Input */}
@@ -191,22 +203,72 @@ const AddBillModal = ({ onClose }) => {
             )}
           </div>
 
+          {/* Fund / Paid From Selector */}
+          <div>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Paid From (Fund)</label>
+              <button
+                type="button"
+                onClick={() => setShowAddFund(!showAddFund)}
+                className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+              >
+                {showAddFund ? 'Cancel' : '+ New Fund'}
+              </button>
+            </div>
+
+            <div className="relative">
+              <select
+                value={fundSource}
+                onChange={(e) => setFundSource(e.target.value)}
+                className="w-full bg-[#131d2b] border border-[#1e293b] rounded-xl px-4 py-3 pr-10 text-white appearance-none outline-none focus:border-emerald-500 text-sm font-medium transition-colors cursor-pointer"
+              >
+                {availableFunds.map((fund, idx) => (
+                  <option key={idx} value={fund} className="bg-[#0e1621] text-white py-2">
+                    {fund}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Inline New Fund Input */}
+            {showAddFund && (
+              <div className="flex gap-2 mt-2">
+                <input 
+                  type="text" 
+                  placeholder="New fund name (e.g. Freelance, Savings)"
+                  className="flex-1 bg-[#131d2b] border border-emerald-500/60 rounded-xl px-4 py-2 text-white placeholder-slate-500 text-sm outline-none"
+                  value={newFundName}
+                  onChange={(e) => setNewFundName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNewFund())}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddNewFund}
+                  className="px-4 py-2 bg-[#1e293b] hover:bg-slate-700 text-white rounded-xl font-semibold text-xs transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Essential Toggle Box */}
-          <div className="bg-[#131d2b] border border-[#1e293b] rounded-2xl p-4 flex items-center justify-between">
+          <div className="bg-[#131d2b] border border-[#1e293b] rounded-2xl p-3.5 flex items-center justify-between">
             <div>
-              <p className="font-bold text-white text-sm">Essential</p>
-              <p className="text-xs text-slate-400 mt-0.5">Must be paid every month</p>
+              <p className="font-bold text-white text-xs">Essential</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Must be paid every month</p>
             </div>
             <button
               type="button"
               onClick={() => setIsEssential(!isEssential)}
-              className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${
+              className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-1 ${
                 isEssential ? 'bg-emerald-500' : 'bg-slate-700'
               }`}
             >
               <div 
                 className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  isEssential ? 'translate-x-6' : 'translate-x-0'
+                  isEssential ? 'translate-x-5' : 'translate-x-0'
                 }`}
               />
             </button>
@@ -216,7 +278,7 @@ const AddBillModal = ({ onClose }) => {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full bg-[#23c55e] hover:bg-[#1ea850] text-black font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] text-center"
+              className="w-full bg-[#23c55e] hover:bg-[#1ea850] text-black font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-[0.99] text-center text-sm"
             >
               Save bill
             </button>

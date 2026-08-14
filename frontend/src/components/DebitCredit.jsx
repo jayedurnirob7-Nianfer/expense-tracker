@@ -1,18 +1,18 @@
-import React, { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, ArrowDownRight, ArrowUpRight, Trash2, RefreshCcw } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ArrowDownRight, ArrowUpRight, RefreshCcw } from 'lucide-react';
 import { format, isSameMonth } from 'date-fns';
 import useStore from '../store/useStore';
+import EditTransactionModal from './EditTransactionModal';
+import MonthNavigator from './MonthNavigator';
 
 const DebitCredit = () => {
   const { 
     transactions, 
     settings, 
-    selectedMonth, 
-    prevMonth, 
-    nextMonth, 
-    deleteTransaction, 
-    updateTransaction 
+    selectedMonth
   } = useStore();
+
+  const [editingItem, setEditingItem] = useState(null);
 
   const currency = settings?.currency || 'BDT';
 
@@ -28,7 +28,7 @@ const DebitCredit = () => {
   }, [monthlyTransactions]);
 
   const expenseTransactions = useMemo(() => {
-    return monthlyTransactions.filter(t => t.type === 'Expense');
+    return monthlyTransactions.filter(t => t.type === 'Expense' && t.status === 'Paid');
   }, [monthlyTransactions]);
 
   const totalCredit = useMemo(() => {
@@ -42,24 +42,8 @@ const DebitCredit = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
       
-      {/* Month Selector */}
-      <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex items-center justify-between">
-        <button 
-          onClick={prevMonth}
-          className="p-2 hover:bg-secondary rounded-xl text-secondary-foreground hover:text-foreground transition-colors"
-          title="Previous Month"
-        >
-          <ChevronLeft size={20} />
-        </button>
-        <span className="font-bold text-[15px]">{format(selectedMonth, 'MMMM yyyy')}</span>
-        <button 
-          onClick={nextMonth}
-          className="p-2 hover:bg-secondary rounded-xl text-secondary-foreground hover:text-foreground transition-colors"
-          title="Next Month"
-        >
-          <ChevronRight size={20} />
-        </button>
-      </div>
+      {/* Interactive Month Selector with Full Month/Year Picker */}
+      <MonthNavigator />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
@@ -78,24 +62,21 @@ const DebitCredit = () => {
           {incomeTransactions.length > 0 ? (
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm divide-y divide-border space-y-2">
               {incomeTransactions.map(t => (
-                <div key={t._id} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
+                <div 
+                  key={t._id} 
+                  onClick={() => setEditingItem(t)}
+                  className="pt-2 first:pt-0 flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all"
+                >
                   <div>
-                    <p className="font-semibold text-sm text-foreground">{t.notes || t.category?.name || 'Income'}</p>
+                    <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Income'}</p>
                     <p className="text-xs text-secondary-foreground">
                       {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold text-sm text-green-500">
+                    <span className="font-bold text-sm text-emerald-400">
                       +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
-                    <button 
-                      onClick={() => deleteTransaction(t._id)}
-                      className="p-1 text-secondary-foreground hover:text-destructive transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -123,33 +104,29 @@ const DebitCredit = () => {
           {expenseTransactions.length > 0 ? (
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm divide-y divide-border space-y-2">
               {expenseTransactions.map(t => (
-                <div key={t._id} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
+                <div 
+                  key={t._id} 
+                  onClick={() => setEditingItem(t)}
+                  className="pt-2 first:pt-0 flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all"
+                >
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <p className="font-semibold text-sm text-foreground">{t.notes || t.category?.name || 'Expense'}</p>
+                      <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Expense'}</p>
                       {t.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
                     </div>
-                    <p className="text-xs text-secondary-foreground">
-                      {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}
+                    <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
+                      <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
+                      {t.fundSource && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          Paid from: {t.fundSource}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-sm text-foreground">
                       -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
-                    <button 
-                      onClick={() => updateTransaction(t._id, { status: t.status === 'Paid' ? 'Pending' : 'Paid' })}
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${t.status === 'Paid' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}
-                    >
-                      {t.status}
-                    </button>
-                    <button 
-                      onClick={() => deleteTransaction(t._id)}
-                      className="p-1 text-secondary-foreground hover:text-destructive transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -163,6 +140,14 @@ const DebitCredit = () => {
         </div>
 
       </div>
+
+      {/* Edit Modal */}
+      {editingItem && (
+        <EditTransactionModal 
+          item={editingItem} 
+          onClose={() => setEditingItem(null)} 
+        />
+      )}
 
     </div>
   );

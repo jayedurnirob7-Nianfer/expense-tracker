@@ -9,6 +9,8 @@ const transactionSchema = new mongoose.Schema({
   tags: [{ type: String }],
   notes: { type: String, default: '' },
   isRecurring: { type: Boolean, default: false },
+  isEssential: { type: Boolean, default: false },
+  fundSource: { type: String, default: 'Salary' },
   status: { type: String, enum: ['Pending', 'Paid'], default: 'Paid' },
 }, { timestamps: true });
 
