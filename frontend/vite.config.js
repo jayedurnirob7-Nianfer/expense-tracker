@@ -7,31 +7,29 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Expense Manager',
-        short_name: 'Expenses',
-        description: 'Personal Income & Expense Tracker',
+        name: 'Nirob Expense Ledger',
+        short_name: 'Nirob Ledger',
+        description: 'Intelligent Financial Wealth Control — Track essential obligations, monitor multi-fund income, and visualize your financial growth.',
         theme_color: '#0f172a',
+        background_color: '#070d18',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
+            src: 'favicon.svg',
+            sizes: '48x48 72x72 96x96 128x128 192x192 256x256 512x512',
+            type: 'image/svg+xml',
+            purpose: 'any'
           },
           {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
+            src: 'favicon.svg',
+            sizes: '48x48 72x72 96x96 128x128 192x192 256x256 512x512',
+            type: 'image/svg+xml',
+            purpose: 'maskable'
           }
         ]
       }
     })
   ],
 })
+
