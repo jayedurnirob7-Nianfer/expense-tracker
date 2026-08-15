@@ -52,7 +52,7 @@ const Auth = () => {
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [sentMaskedEmail, setSentMaskedEmail] = useState('');
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '534810784499-nqllp8mu0dhljpb768trr3u80g1vuj8.apps.googleusercontent.com';
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '534810784499-nqlllp8mu0dhljpb768trr3u80g1vuj8.apps.googleusercontent.com';
 
   useEffect(() => {
     checkSetup();
