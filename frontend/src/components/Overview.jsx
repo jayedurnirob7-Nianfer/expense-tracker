@@ -1,10 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight, Coins, ChevronRight as ArrowRightIcon } from 'lucide-react';
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
 import EditTransactionModal from './EditTransactionModal';
+import BillActionModal from './BillActionModal';
 import MonthNavigator from './MonthNavigator';
+import FundBreakdownCard from './FundBreakdownCard';
+import { Check } from 'lucide-react';
+import { resolveFundSource } from '../utils/funds';
 
 const CustomDailyTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
@@ -79,10 +83,14 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
     prevMonth, 
     nextMonth, 
     deleteTransaction, 
-    updateTransaction 
+    updateTransaction,
+    cryptoSummary,
+    cryptoHoldings,
+    setActiveView
   } = useStore();
 
   const [editingItem, setEditingItem] = useState(null);
+  const [activeBillAction, setActiveBillAction] = useState(null);
   const [selectedBillIds, setSelectedBillIds] = useState([]);
 
   const currency = settings?.currency || 'BDT';
@@ -319,6 +327,62 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </div>
       </div>
 
+      {/* Crypto Portfolio Quick Snapshot */}
+      {cryptoSummary && (
+        <div 
+          onClick={() => setActiveView('Crypto')}
+          className="group relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-card to-primary/10 border border-amber-500/30 hover:border-amber-500/60 rounded-3xl p-5 sm:p-6 shadow-sm cursor-pointer transition-all duration-200"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold shadow-inner">
+                <Coins size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-base text-foreground group-hover:text-amber-400 transition-colors">
+                    Crypto & Investment Portfolio
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Live
+                  </span>
+                </div>
+                <p className="text-xs text-secondary-foreground mt-0.5">
+                  {cryptoHoldings.length} Active Holding{cryptoHoldings.length === 1 ? '' : 's'} · Real-time market valuation
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between sm:justify-end gap-5">
+              <div className="text-left sm:text-right">
+                <p className="text-xs text-secondary-foreground">Current Valuation</p>
+                <p className="font-mono font-extrabold text-lg text-foreground">
+                  ${cryptoSummary.currentValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-xs text-secondary-foreground">Total Return</p>
+                <span className={`inline-block px-2.5 py-0.5 rounded-lg text-xs font-bold font-mono ${
+                  cryptoSummary.totalProfitLossUsd >= 0
+                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                }`}>
+                  {cryptoSummary.totalProfitLossUsd >= 0 ? '+' : ''}{cryptoSummary.totalReturnPercent.toFixed(2)}%
+                </span>
+              </div>
+
+              <div className="hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-secondary-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <ArrowRightIcon size={16} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fund Source Breakdown & Totals (Salary Spent vs Inflow) */}
+      <FundBreakdownCard monthlyOnly={true} />
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Category Breakdown Pie Chart */}
@@ -468,11 +532,19 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                     </div>
                     <p className="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-1.5">
                       <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
-                      {t.fundSource && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          Paid from: {t.fundSource}
-                        </span>
-                      )}
+                      {t.fundSource && (() => {
+                        const resolved = resolveFundSource(t.fundSource, transactions, categories);
+                        const isMisc = resolved.toLowerCase() === 'miscellaneous' || resolved.toLowerCase() === 'misc';
+                        return (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                            isMisc 
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}>
+                            Paid from: {resolved}
+                          </span>
+                        );
+                      })()}
                     </p>
                   </div>
                   <span className="font-bold text-sm text-foreground whitespace-nowrap">
@@ -547,10 +619,12 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
             {essentialBills.map(b => {
               const overdue = isOverdue(b);
               const isSelected = selectedBillIds.includes(b._id);
+              const bDate = new Date(b.date);
+              const dueDay = !isNaN(bDate.getTime()) ? bDate.getDate() : 1;
               return (
                 <div 
                   key={b._id} 
-                  onClick={() => setEditingItem(b)}
+                  onClick={() => setActiveBillAction(b)}
                   className={`pt-3 first:pt-0 flex items-center justify-between gap-4 p-3 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all ${
                     isSelected ? 'bg-emerald-500/10 border border-emerald-500/30' : overdue ? 'bg-amber-500/5 border border-amber-500/30' : ''
                   }`}
@@ -569,13 +643,15 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                         title="Select to pay"
                       />
                     ) : (
-                      <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                        <CheckCircle2 size={12} />
+                      <div className="w-5 h-5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <Check size={12} strokeWidth={2.5} />
                       </div>
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-foreground hover:text-primary transition-colors">{b.notes || b.category?.name || 'Bill'}</p>
+                        <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">
+                          {b.notes || b.category?.name || 'Bill'}
+                        </p>
                         {b.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
                         {overdue && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
@@ -584,12 +660,20 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                         )}
                       </div>
                       <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
-                        <span>Due: {format(new Date(b.date), 'MMM dd, yyyy')} · {b.category?.name || 'Bill'}</span>
-                        {b.fundSource && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            Paid from: {b.fundSource}
-                          </span>
-                        )}
+                        <span>Due day {dueDay} · {b.status === 'Paid' ? 'paid this cycle' : 'unpaid'}</span>
+                        {b.fundSource && (() => {
+                          const resolved = resolveFundSource(b.fundSource, transactions, categories);
+                          const isMisc = resolved.toLowerCase() === 'miscellaneous' || resolved.toLowerCase() === 'misc';
+                          return (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              isMisc 
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            }`}>
+                              Paid from: {resolved}
+                            </span>
+                          );
+                        })()}
                       </p>
                     </div>
                   </div>
@@ -636,6 +720,18 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
           </div>
         )}
       </div>
+
+      {/* Bill Action Quick Modal for Essential Bills */}
+      {activeBillAction && (
+        <BillActionModal
+          bill={activeBillAction}
+          onClose={() => setActiveBillAction(null)}
+          onOpenEdit={(bill) => {
+            setActiveBillAction(null);
+            setEditingItem(bill);
+          }}
+        />
+      )}
 
       {/* Edit Modal */}
       {editingItem && (

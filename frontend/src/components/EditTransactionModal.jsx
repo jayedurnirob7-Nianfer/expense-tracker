@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
 import { X, Calendar as CalendarIcon, ChevronDown, Check, Trash2, Lock, ShieldAlert } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import api from '../api';
+
+import { resolveFundSource, getAvailableFundOptions } from '../utils/funds';
 
 const EditTransactionModal = ({ item, onClose }) => {
   const { categories, transactions, addCategory, updateTransaction, deleteTransaction } = useStore();
@@ -17,17 +19,11 @@ const EditTransactionModal = ({ item, onClose }) => {
   const [status, setStatus] = useState(item.status || 'Paid');
   const [isEssential, setIsEssential] = useState(item.isEssential !== undefined ? Boolean(item.isEssential) : Boolean(item.isRecurring));
 
-  // Fund / Paid From state - automatically includes all credited income transactions and categories
-  const creditCategories = categories.filter(c => c.type?.toLowerCase() === 'income').map(c => c.name);
-  const creditTransactionFunds = transactions
-    .filter(t => t.type === 'Income')
-    .map(t => t.notes?.trim() || t.category?.name)
-    .filter(Boolean);
-
-  const baseFunds = ['Salary', ...creditTransactionFunds, ...creditCategories];
-  const [customFunds, setCustomFunds] = useState(item.fundSource && !baseFunds.includes(item.fundSource) ? [item.fundSource] : []);
-  const availableFunds = Array.from(new Set([...baseFunds, ...customFunds])).filter(Boolean);
-  const [fundSource, setFundSource] = useState(item.fundSource || availableFunds[0] || 'Salary');
+  // Fund / Paid From state - automatically includes active income funds and Miscellaneous
+  const [customFunds, setCustomFunds] = useState([]);
+  const availableFunds = getAvailableFundOptions(transactions, categories, customFunds);
+  const resolvedItemFund = item.fundSource ? resolveFundSource(item.fundSource, transactions, categories) : availableFunds[0] || 'Salary';
+  const [fundSource, setFundSource] = useState(resolvedItemFund);
   const [showAddFund, setShowAddFund] = useState(false);
   const [newFundName, setNewFundName] = useState('');
   
@@ -40,6 +36,15 @@ const EditTransactionModal = ({ item, onClose }) => {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const currentCategories = categories.filter(c => c.type?.toLowerCase() === type.toLowerCase());
   const currentCategory = selectedCategory 
@@ -127,7 +132,7 @@ const EditTransactionModal = ({ item, onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 min-h-[100dvh] w-full h-full bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div 

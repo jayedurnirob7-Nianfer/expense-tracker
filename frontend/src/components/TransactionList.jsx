@@ -3,9 +3,10 @@ import useStore from '../store/useStore';
 import { format } from 'date-fns';
 import { Search, RefreshCcw } from 'lucide-react';
 import EditTransactionModal from './EditTransactionModal';
+import { resolveFundSource } from '../utils/funds';
 
 const TransactionList = () => {
-  const { transactions, settings } = useStore();
+  const { transactions, categories, settings } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingItem, setEditingItem] = useState(null);
 
@@ -81,11 +82,19 @@ const TransactionList = () => {
                     >
                       {t.category?.name || 'Uncategorized'}
                     </span>
-                    {t.type === 'Expense' && t.fundSource && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Fund: {t.fundSource}
-                      </span>
-                    )}
+                    {t.type === 'Expense' && t.fundSource && (() => {
+                      const resolved = resolveFundSource(t.fundSource, transactions, categories);
+                      const isMisc = resolved.toLowerCase() === 'miscellaneous' || resolved.toLowerCase() === 'misc';
+                      return (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          isMisc 
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        }`}>
+                          Fund: {resolved}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </td>
 

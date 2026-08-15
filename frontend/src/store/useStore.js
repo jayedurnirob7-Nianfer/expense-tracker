@@ -9,6 +9,13 @@ const useStore = create((set, get) => ({
   activeView: 'Overview',
   selectedMonth: new Date(),
 
+  // Crypto State
+  cryptoHoldings: [],
+  cryptoSummary: null,
+  cryptoPrices: {},
+  popularCrypto: [],
+  cryptoLoading: false,
+
   setActiveView: (view) => set({ activeView: view }),
   setSelectedMonth: (date) => {
     set({ selectedMonth: date });
@@ -34,7 +41,8 @@ const useStore = create((set, get) => ({
     await Promise.all([
       state.fetchSettings(),
       state.fetchCategories(),
-      state.fetchTransactions()
+      state.fetchTransactions(),
+      state.fetchCrypto()
     ]);
   },
 
@@ -120,6 +128,18 @@ const useStore = create((set, get) => ({
       return { 
         success: false, 
         message: error.response?.data?.message || 'Recovery verification failed' 
+      };
+    }
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    try {
+      const res = await api.put('/auth/change-password', { currentPassword, newPassword });
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || 'Failed to update password' 
       };
     }
   },
@@ -344,8 +364,28 @@ const useStore = create((set, get) => ({
   
   deleteTransaction: async (id) => {
     try {
+      const txToDelete = get().transactions.find(t => t._id === id);
       await api.delete(`/transactions/${id}`);
-      set((state) => ({ transactions: state.transactions.filter(t => t._id !== id) }));
+      
+      set((state) => {
+        let updatedList = state.transactions.filter(t => t._id !== id);
+        if (txToDelete && txToDelete.type === 'Income') {
+          const fundNamesToClear = [
+            txToDelete.notes?.trim(),
+            txToDelete.category?.name?.trim()
+          ].filter(Boolean);
+
+          if (fundNamesToClear.length > 0) {
+            updatedList = updatedList.map(t => {
+              if (t.fundSource && fundNamesToClear.includes(t.fundSource.trim())) {
+                return { ...t, fundSource: 'Miscellaneous' };
+              }
+              return t;
+            });
+          }
+        }
+        return { transactions: updatedList };
+      });
     } catch (error) {
       console.error(error);
     }
@@ -360,6 +400,89 @@ const useStore = create((set, get) => ({
     } catch (error) {
       console.error(error);
     }
+  },
+
+  // Crypto Portfolio Actions
+  fetchCrypto: async () => {
+    try {
+      set({ cryptoLoading: true });
+      const res = await api.get('/crypto');
+      if (res.data.success) {
+        set({
+          cryptoHoldings: res.data.holdings || [],
+          cryptoSummary: res.data.summary || null,
+          cryptoPrices: res.data.livePrices || {},
+          popularCrypto: res.data.popularCoins || [],
+          cryptoLoading: false
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch crypto holdings', error);
+      set({ cryptoLoading: false });
+    }
+  },
+
+  addCryptoTrade: async (tradeData) => {
+    try {
+      const res = await api.post('/crypto/trade', tradeData);
+      if (res.data.success) {
+        await Promise.all([
+          get().fetchCrypto(),
+          tradeData.deductFromLedger ? get().fetchTransactions() : Promise.resolve()
+        ]);
+        return { success: true, message: res.data.message };
+      }
+      return { success: false, message: 'Failed to record trade' };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error.response?.data?.message || error.message || 'Error executing trade' 
+      };
+    }
+  },
+
+  editCryptoHolding: async (id, data) => {
+    try {
+      const res = await api.put(`/crypto/holding/${id}`, data);
+      if (res.data.success) {
+        await get().fetchCrypto();
+        return { success: true };
+      }
+      return { success: false, message: 'Failed to update holding' };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Error updating holding' };
+    }
+  },
+
+  deleteCryptoHolding: async (id) => {
+    try {
+      const res = await api.delete(`/crypto/holding/${id}`);
+      if (res.data.success) {
+        await get().fetchCrypto();
+        return { success: true };
+      }
+      return { success: false, message: 'Failed to delete holding' };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Error deleting holding' };
+    }
+  },
+
+  toggleCryptoFavorite: async (id) => {
+    try {
+      const res = await api.patch(`/crypto/holding/${id}/favorite`);
+      if (res.data.success) {
+        await get().fetchCrypto();
+        return { success: true };
+      }
+      return { success: false };
+    } catch (error) {
+      console.error('Failed to toggle crypto favorite', error);
+      return { success: false };
+    }
+  },
+
+  refreshCryptoPrices: async () => {
+    await get().fetchCrypto();
   },
 
   exportBackup: () => {

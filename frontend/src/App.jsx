@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Overview from './components/Overview';
 import DebitCredit from './components/DebitCredit';
 import Bills from './components/Bills';
+import CryptoPortfolio from './components/CryptoPortfolio';
 import SettingsView from './components/SettingsView';
 import Auth from './components/Auth';
 import AddTransactionModal from './components/AddTransactionModal';
@@ -29,7 +30,7 @@ function App() {
     }
   }, [isAuthenticated, isLocked, fetchData]);
 
-  // Inactivity timeout logic
+  // Inactivity timeout logic (15 minutes timeout with touch & click listeners)
   useEffect(() => {
     let inactivityTimer;
     const resetTimer = () => {
@@ -37,13 +38,15 @@ function App() {
       if (isAuthenticated && !isLocked) {
         inactivityTimer = setTimeout(() => {
           lockApp();
-        }, 60000); // 1 minute
+        }, 15 * 60 * 1000); // 15 minutes of complete inactivity
       }
     };
 
     if (isAuthenticated && !isLocked) {
       resetTimer();
       window.addEventListener('mousemove', resetTimer);
+      window.addEventListener('mousedown', resetTimer);
+      window.addEventListener('touchstart', resetTimer);
       window.addEventListener('keydown', resetTimer);
       window.addEventListener('scroll', resetTimer);
     }
@@ -51,6 +54,8 @@ function App() {
     return () => {
       clearTimeout(inactivityTimer);
       window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('mousedown', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
       window.removeEventListener('keydown', resetTimer);
       window.removeEventListener('scroll', resetTimer);
     };
@@ -65,6 +70,7 @@ function App() {
       case 'Overview': return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
       case 'DebitCredit': return <DebitCredit />;
       case 'Bills': return <Bills onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
+      case 'Crypto': return <CryptoPortfolio />;
       case 'Settings': return <SettingsView />;
       default: return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
     }

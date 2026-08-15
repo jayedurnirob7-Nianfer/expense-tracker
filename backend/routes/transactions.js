@@ -53,6 +53,26 @@ router.put('/:id', async (req, res) => {
 // Delete a transaction
 router.delete('/:id', async (req, res) => {
   try {
+    const txToDelete = await Transaction.findById(req.params.id).populate('category');
+    if (!txToDelete) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    // If deleting an Income (Credit) transaction, update fundSource to Miscellaneous for all Debit items that used this income
+    if (txToDelete.type === 'Income') {
+      const fundNamesToClear = [
+        txToDelete.notes?.trim(),
+        txToDelete.category?.name?.trim()
+      ].filter(Boolean);
+
+      if (fundNamesToClear.length > 0) {
+        await Transaction.updateMany(
+          { fundSource: { $in: fundNamesToClear } },
+          { $set: { fundSource: 'Miscellaneous' } }
+        );
+      }
+    }
+
     await Transaction.findByIdAndDelete(req.params.id);
     res.json({ message: 'Transaction deleted' });
   } catch (err) {

@@ -1,34 +1,53 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import useStore from '../store/useStore';
-import { LayoutGrid, Wallet, ReceiptText, Settings, X, Lock, LogOut, Sun, Moon } from 'lucide-react';
+import { Home, LayoutGrid, Wallet, ReceiptText, Settings, X, Lock, LogOut, Sun, Moon, Coins } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { activeView, setActiveView, lockApp, logout, settings, toggleTheme } = useStore();
+  const { activeView, setActiveView, lockApp, logout, settings, toggleTheme, cryptoHoldings } = useStore();
 
   const isDark = settings?.theme === 'dark';
   const menuItems = [
-    { id: 'Overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'Overview', label: 'Home Dashboard', icon: Home },
     { id: 'DebitCredit', label: 'Debit & Credit', icon: Wallet },
     { id: 'Bills', label: 'Bills', icon: ReceiptText },
+    { id: 'Crypto', label: 'Crypto & Assets', icon: Coins, badge: cryptoHoldings?.length > 0 ? `${cryptoHoldings.length}` : null },
     { id: 'Settings', label: 'Settings', icon: Settings },
   ];
+
+  // Close on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   return (
     <>
       {/* Backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity"
+          className="fixed inset-0 min-h-[100dvh] w-full h-full bg-black/80 backdrop-blur-md z-[90] transition-opacity"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar Panel */}
       <div 
-        className={`fixed top-0 left-0 h-full w-72 bg-background border-r border-border z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed top-0 left-0 h-full w-72 bg-background border-r border-border z-[95] transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="p-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Nirob Expense Ledger</h2>
+          <div 
+            onClick={() => {
+              setActiveView('Overview');
+              onClose();
+            }}
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <span className="text-[10px] font-bold tracking-widest text-primary uppercase block">Financial OS</span>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">Nirob Expense Ledger</h2>
+          </div>
           <button onClick={onClose} className="p-2 text-secondary-foreground hover:bg-secondary rounded-full transition-colors">
             <X size={20} />
           </button>
@@ -46,14 +65,23 @@ const Sidebar = ({ isOpen, onClose }) => {
                   setActiveView(item.id);
                   onClose();
                 }}
-                className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl font-semibold transition-all duration-200 ${
+                className={`flex items-center justify-between px-4 py-3.5 rounded-2xl font-semibold transition-all duration-200 ${
                   isActive 
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
                     : 'text-secondary-foreground hover:bg-secondary hover:text-foreground'
                 }`}
               >
-                <Icon size={20} className={isActive ? 'text-primary-foreground' : 'text-secondary-foreground group-hover:text-foreground'} />
-                <span className="text-[15px]">{item.label}</span>
+                <div className="flex items-center gap-4">
+                  <Icon size={20} className={isActive ? 'text-primary-foreground' : 'text-secondary-foreground group-hover:text-foreground'} />
+                  <span className="text-[15px]">{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    isActive ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-primary/15 text-primary'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}

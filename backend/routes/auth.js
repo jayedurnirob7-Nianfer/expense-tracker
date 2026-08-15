@@ -22,7 +22,7 @@ router.post('/setup', async (req, res) => {
     const user = new User({ 
       password, 
       email: email || '', 
-      name: name || 'Master Nirob' 
+      name: name || 'Nirob' 
     });
     await user.save();
     const token = jwt.sign(
@@ -30,7 +30,7 @@ router.post('/setup', async (req, res) => {
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' } 
     );
-    res.status(201).json({ token, isSetup: true, message: 'Master user created successfully' });
+    res.status(201).json({ token, isSetup: true, message: 'User created successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -69,7 +69,7 @@ router.post('/google', async (req, res) => {
     const { credential, email: directEmail, name: directName, googleId: directGoogleId } = req.body;
     let googleUser = {
       email: directEmail,
-      name: directName || 'Master Nirob',
+      name: directName || 'Nirob',
       sub: directGoogleId,
       picture: ''
     };
@@ -85,7 +85,7 @@ router.post('/google', async (req, res) => {
           const payload = ticket.getPayload();
           googleUser = {
             email: payload.email,
-            name: payload.name || 'Master Nirob',
+            name: payload.name || 'Nirob',
             sub: payload.sub,
             picture: payload.picture || ''
           };
@@ -95,7 +95,7 @@ router.post('/google', async (req, res) => {
           if (decoded && decoded.email) {
             googleUser = {
               email: decoded.email,
-              name: decoded.name || 'Master Nirob',
+              name: decoded.name || 'Nirob',
               sub: decoded.sub,
               picture: decoded.picture || ''
             };
@@ -178,18 +178,18 @@ router.get('/check-setup', async (req, res) => {
   }
 });
 
-// J.A.R.V.I.S. Emergency Recovery - Request Code
+// Emergency Recovery - Request Code
 router.post('/request-recovery', async (req, res) => {
   try {
     const user = await User.findOne();
     if (!user) {
-      return res.status(404).json({ message: 'System uninitialized. No master profile found.' });
+      return res.status(404).json({ message: 'System uninitialized. No user profile found.' });
     }
 
     const targetEmail = req.body.email || user.email;
     if (!targetEmail) {
       return res.status(400).json({ 
-        message: 'No recovery email bound to J.A.R.V.I.S. Please provide your master email.',
+        message: 'No recovery email registered. Please provide your email address.',
         needsEmailInput: true
       });
     }
@@ -201,25 +201,28 @@ router.post('/request-recovery', async (req, res) => {
     if (!user.email) user.email = targetEmail;
     await user.save();
 
-    // Send email
-    const mailRes = await sendRecoveryEmail(targetEmail, otp, user.name || 'Master Nirob');
+    // Send real email via SMTP / Gmail
+    const mailRes = await sendRecoveryEmail(targetEmail, otp, user.name || 'Nirob');
+    if (!mailRes.success) {
+      return res.status(500).json({ 
+        message: mailRes.error || 'Failed to dispatch recovery email. Please verify SMTP configuration.' 
+      });
+    }
 
     const [local, domain] = targetEmail.split('@');
     const masked = `${local.charAt(0)}***${local.charAt(local.length - 1)}@${domain}`;
 
     res.json({
       success: true,
-      message: `Emergency recovery authorization dispatched to ${masked}`,
-      maskedEmail: masked,
-      // For instant testing if SMTP is not filled in .env
-      devCode: (!process.env.SMTP_USER && !process.env.GMAIL_USER) ? otp : undefined
+      message: `Recovery code dispatched to ${masked}. Please check your inbox.`,
+      maskedEmail: masked
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// J.A.R.V.I.S. Emergency Recovery - Verify Code & Reset Password
+// Emergency Recovery - Verify Code & Reset Password
 router.post('/verify-recovery', async (req, res) => {
   try {
     const { otp, newPassword } = req.body;
@@ -229,15 +232,15 @@ router.post('/verify-recovery', async (req, res) => {
 
     const user = await User.findOne();
     if (!user || !user.recoveryOtp || !user.recoveryOtpExpires) {
-      return res.status(400).json({ message: 'No active recovery authorization found' });
+      return res.status(400).json({ message: 'No active recovery request found' });
     }
 
     if (new Date() > new Date(user.recoveryOtpExpires)) {
-      return res.status(400).json({ message: 'Authorization code has expired. Please request a new one.' });
+      return res.status(400).json({ message: 'Verification code has expired. Please request a new one.' });
     }
 
     if (user.recoveryOtp.trim() !== otp.trim()) {
-      return res.status(400).json({ message: 'Invalid emergency authorization code. Access denied.' });
+      return res.status(400).json({ message: 'Invalid verification code. Access denied.' });
     }
 
     // Reset password & clear OTP
@@ -255,7 +258,7 @@ router.post('/verify-recovery', async (req, res) => {
     res.json({
       success: true,
       token,
-      message: 'Master password successfully updated. Welcome back, Master Nirob.'
+      message: 'Master password successfully updated. Welcome back.'
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -265,7 +268,9 @@ router.post('/verify-recovery', async (req, res) => {
 // User profile & binding settings
 router.get('/profile', auth, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const userId = req.userId || req.userData?.userId;
+    let user = userId ? await User.findById(userId) : null;
+    if (!user) user = await User.findOne();
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json({
       email: user.email,
@@ -281,12 +286,43 @@ router.get('/profile', auth, async (req, res) => {
 router.put('/profile', auth, async (req, res) => {
   try {
     const { email, name } = req.body;
-    const user = await User.findById(req.userId);
+    const userId = req.userId || req.userData?.userId;
+    let user = userId ? await User.findById(userId) : null;
+    if (!user) user = await User.findOne();
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (email !== undefined) user.email = email;
     if (name !== undefined) user.name = name;
     await user.save();
     res.json({ success: true, user: { email: user.email, name: user.name } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Directly update master password from Settings
+router.put('/change-password', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!newPassword || newPassword.length < 4) {
+      return res.status(400).json({ message: 'New password must be at least 4 characters long' });
+    }
+
+    const userId = req.userId || req.userData?.userId;
+    let user = userId ? await User.findById(userId) : null;
+    if (!user) user = await User.findOne();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Verify current password if provided
+    if (currentPassword) {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password does not match' });
+      }
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.json({ success: true, message: 'Master password changed successfully!' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -212,7 +212,7 @@ input[type=number] {
   border-color: #ffffff !important;
 }
 
-/* J.A.R.V.I.S. Futuristic HUD Animations */
+/* Futuristic HUD & Glow Animations */
 @keyframes spinSlow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

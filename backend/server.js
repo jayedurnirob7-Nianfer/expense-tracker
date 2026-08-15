@@ -14,11 +14,13 @@ const authRoutes = require('./routes/auth');
 const categoriesRoutes = require('./routes/categories');
 const transactionsRoutes = require('./routes/transactions');
 const settingsRoutes = require('./routes/settings');
+const cryptoRoutes = require('./routes/crypto');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/crypto', cryptoRoutes);
 
 // Seed function
 const seedDefaultData = async () => {

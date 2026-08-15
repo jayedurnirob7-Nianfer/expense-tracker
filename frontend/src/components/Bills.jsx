@@ -1,21 +1,27 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, RefreshCcw, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, RefreshCcw, CheckCircle2, Clock, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { format, isSameMonth } from 'date-fns';
 import useStore from '../store/useStore';
 import EditTransactionModal from './EditTransactionModal';
+import BillActionModal from './BillActionModal';
 import MonthNavigator from './MonthNavigator';
+import { Check } from 'lucide-react';
+import { resolveFundSource } from '../utils/funds';
 
 const Bills = ({ onOpenAddBillModal }) => {
   const { 
     transactions, 
+    categories,
     settings, 
     selectedMonth, 
     prevMonth, 
     nextMonth, 
-    updateTransaction 
+    updateTransaction,
+    setActiveView
   } = useStore();
 
   const [editingItem, setEditingItem] = useState(null);
+  const [activeBillAction, setActiveBillAction] = useState(null);
   const [selectedBillIds, setSelectedBillIds] = useState([]);
 
   const currency = settings?.currency || 'BDT';
@@ -86,7 +92,6 @@ const Bills = ({ onOpenAddBillModal }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-20">
-      
       {/* Interactive Month Selector with Full Month/Year Picker */}
       <MonthNavigator />
 
@@ -177,10 +182,12 @@ const Bills = ({ onOpenAddBillModal }) => {
           {monthlyBills.map(b => {
             const overdue = isOverdue(b);
             const isSelected = selectedBillIds.includes(b._id);
+            const bDate = new Date(b.date);
+            const dueDay = !isNaN(bDate.getTime()) ? bDate.getDate() : 1;
             return (
               <div 
                 key={b._id} 
-                onClick={() => setEditingItem(b)}
+                onClick={() => setActiveBillAction(b)}
                 className={`pt-3 first:pt-0 flex items-center justify-between gap-4 p-3 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all ${
                   isSelected ? 'bg-emerald-500/10 border border-emerald-500/30' : overdue ? 'bg-amber-500/5 border border-amber-500/30' : ''
                 }`}
@@ -199,13 +206,15 @@ const Bills = ({ onOpenAddBillModal }) => {
                       title="Select to pay"
                     />
                   ) : (
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                      <CheckCircle2 size={12} />
+                    <div className="w-5 h-5 rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                      <Check size={12} strokeWidth={2.5} />
                     </div>
                   )}
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-foreground hover:text-primary transition-colors">{b.notes || b.category?.name || 'Bill'}</p>
+                      <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">
+                        {b.notes || b.category?.name || 'Bill'}
+                      </p>
                       {b.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
                       {overdue && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
@@ -214,12 +223,20 @@ const Bills = ({ onOpenAddBillModal }) => {
                       )}
                     </div>
                     <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
-                      <span>Due: {format(new Date(b.date), 'MMM dd, yyyy')} · {b.category?.name || 'Bill'}</span>
-                      {b.fundSource && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          Paid from: {b.fundSource}
-                        </span>
-                      )}
+                      <span>Due day {dueDay} · {b.status === 'Paid' ? 'paid this cycle' : 'unpaid'}</span>
+                      {b.fundSource && (() => {
+                        const resolved = resolveFundSource(b.fundSource, transactions, categories);
+                        const isMisc = resolved.toLowerCase() === 'miscellaneous' || resolved.toLowerCase() === 'misc';
+                        return (
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                            isMisc 
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}>
+                            Paid from: {resolved}
+                          </span>
+                        );
+                      })()}
                     </p>
                   </div>
                 </div>
@@ -257,6 +274,18 @@ const Bills = ({ onOpenAddBillModal }) => {
           <h4 className="text-base font-bold mb-1.5">No bills for {format(selectedMonth, 'MMMM yyyy')}</h4>
           <p className="text-sm text-secondary-foreground">Add rent, utilities or subscriptions to track what must be paid.</p>
         </div>
+      )}
+
+      {/* Bill Action Quick Modal for Essential Bills */}
+      {activeBillAction && (
+        <BillActionModal
+          bill={activeBillAction}
+          onClose={() => setActiveBillAction(null)}
+          onOpenEdit={(bill) => {
+            setActiveBillAction(null);
+            setEditingItem(bill);
+          }}
+        />
       )}
 
       {/* Edit Modal */}
