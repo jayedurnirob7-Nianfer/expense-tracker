@@ -58,9 +58,54 @@ const Auth = () => {
     checkSetup();
   }, [checkSetup]);
 
+  // Initialize Google Identity Services (GIS) ID token flow
+  useEffect(() => {
+    if (window.google?.accounts?.id && googleClientId) {
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: async (response) => {
+            if (response.credential) {
+              setLoading(true);
+              const res = await loginWithGoogle({ credential: response.credential });
+              setLoading(false);
+              if (res.success) {
+                setAccessGranted(true);
+              } else {
+                setError(res.message || 'Access Denied for this Google account.');
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn('GIS Init warning:', e);
+      }
+    }
+  }, [googleClientId, loginWithGoogle]);
+
   const handleGoogleAuth = () => {
     setError('');
     
+    // First try standard Google Identity Services prompt
+    if (window.google?.accounts?.id) {
+      try {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            // Fallback to OAuth2 token client if One Tap prompt was skipped
+            fallbackOAuthClient();
+          }
+        });
+        return;
+      } catch (err) {
+        fallbackOAuthClient();
+        return;
+      }
+    }
+
+    fallbackOAuthClient();
+  };
+
+  const fallbackOAuthClient = () => {
     if (window.google?.accounts?.oauth2) {
       try {
         setLoading(true);
@@ -70,12 +115,11 @@ const Auth = () => {
           callback: async (tokenResponse) => {
             if (tokenResponse.error) {
               setLoading(false);
-              setError(tokenResponse.error_description || 'Google sign-in cancelled.');
+              setError(tokenResponse.error_description || 'Google sign-in cancelled or blocked.');
               return;
             }
             if (tokenResponse.access_token) {
               try {
-                // Fetch verified profile from Google UserInfo endpoint
                 const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                   headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                 });
@@ -108,10 +152,10 @@ const Auth = () => {
       } catch (err) {
         setLoading(false);
         console.error('Google OAuth init error:', err);
-        setError('Failed to open Google account picker. Please ensure popups are allowed.');
+        setError('Google OAuth popup failed. Please use Master Password or reset via email.');
       }
     } else {
-      setError('Google Sign-In is initializing. Please wait a moment and try again.');
+      setError('Google Sign-In service is loading. Please try again in a few seconds.');
     }
   };
 
