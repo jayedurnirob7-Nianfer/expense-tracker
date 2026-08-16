@@ -258,14 +258,16 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   }, [essentialBills]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+    <div className="max-w-4xl mx-auto flex flex-col gap-6 pb-20">
       
       {/* Interactive Month Selector with Full Month/Year Picker */}
-      <MonthNavigator />
+      <div className="order-1">
+        <MonthNavigator />
+      </div>
 
       {/* Overdue Unpaid Essential Bill Alert Banner */}
       {overdueBills.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-400 shadow-sm animate-in fade-in">
+        <div className="order-2 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-amber-400 shadow-sm animate-in fade-in">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
               <AlertTriangle size={20} />
@@ -295,7 +297,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
       )}
 
       {/* Total Balance Card */}
-      <div className="bg-card rounded-2xl p-6 border border-border shadow-sm">
+      <div className="order-3 bg-card rounded-2xl p-6 border border-border shadow-sm">
         <div className="flex items-center gap-2 text-secondary-foreground uppercase tracking-wider text-xs font-bold mb-2">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           Total Balance
@@ -306,7 +308,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
       </div>
 
       {/* Credit / Debit Mini Cards */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="order-4 grid grid-cols-2 gap-4">
         <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
           <div className="flex items-center gap-2 text-primary uppercase tracking-wider text-xs font-bold mb-1.5">
             <TrendingUp size={14} strokeWidth={3} />
@@ -331,7 +333,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
       {cryptoSummary && (
         <div 
           onClick={() => setActiveView('Crypto')}
-          className="group relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-card to-primary/10 border border-amber-500/30 hover:border-amber-500/60 rounded-3xl p-5 sm:p-6 shadow-sm cursor-pointer transition-all duration-200"
+          className="order-5 group relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-card to-primary/10 border border-amber-500/30 hover:border-amber-500/60 rounded-3xl p-5 sm:p-6 shadow-sm cursor-pointer transition-all duration-200"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
@@ -380,274 +382,269 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </div>
       )}
 
-      {/* Responsive Section Layout: Transactions First on Mobile, Funds First on Desktop */}
-      <div className="flex flex-col space-y-6">
-        
-        {/* High-Visibility Activity Section: Credit & Debit Cards (Mobile: Order 1, Desktop: Order 3) */}
-        <div className="order-1 md:order-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            
-            {/* Left Card: Credit — Money In */}
-            <div className="bg-[#0b1622] rounded-3xl border border-emerald-500/30 overflow-hidden shadow-lg shadow-emerald-950/20 flex flex-col transition-all hover:border-emerald-500/50">
-              {/* Card Header */}
-              <div className="p-4 bg-gradient-to-r from-emerald-950/60 to-transparent border-b border-emerald-500/20 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                    <ArrowDownRight size={18} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-emerald-300 uppercase tracking-wider">Credit · Money In</h3>
-                    <p className="text-[10px] text-slate-400">Total earned & credited</p>
-                  </div>
-                </div>
+      {/* Fund Source Breakdown & Totals (Mobile: Order 8, Desktop: Order 6) */}
+      <div className="order-8 md:order-6">
+        <FundBreakdownCard monthlyOnly={true} />
+      </div>
 
-                <div className="flex items-center gap-2.5">
-                  <span className="font-bold text-sm sm:text-base text-emerald-400 font-mono">
-                    +{currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onOpenAddModal && onOpenAddModal()}
-                    className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
-                    title="Add income entry"
+      {/* Charts Row (Order 7 on Mobile & Desktop) */}
+      <div className="order-7 md:order-7 grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Category Breakdown Pie Chart */}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
+          <div className="mb-4">
+            <h3 className="font-bold text-[15px] text-foreground">Where the money goes</h3>
+            <p className="text-xs text-secondary-foreground mt-0.5">Top expense categories for {format(selectedMonth, 'MMM yyyy')}</p>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            {categoryPieData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie
+                    data={categoryPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={4}
+                    dataKey="value"
                   >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* List of Income Transactions */}
-              <div className="p-2 divide-y divide-[#1e293b] flex-1 flex flex-col justify-start min-h-[160px]">
-                {recentIncomeTransactions.length > 0 ? (
-                  recentIncomeTransactions.map((t) => (
-                    <div
-                      key={t._id}
-                      onClick={() => setEditingItem(t)}
-                      className="p-3 hover:bg-emerald-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                          <ArrowDownRight size={14} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="font-bold text-xs sm:text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
-                              {t.notes || t.category?.name || 'Income'}
-                            </p>
-                            {t.receiptImage && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
-                                <Camera size={8} />
-                                <span>Photo</span>
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className="font-bold text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
-                        +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                      <ArrowDownRight size={16} />
-                    </div>
-                    <p className="font-medium text-slate-300">No income logged for this month</p>
-                    <button
-                      type="button"
-                      onClick={() => onOpenAddModal && onOpenAddModal()}
-                      className="mt-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
-                    >
-                      <Plus size={13} />
-                      <span>Log Income</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Card: Debit — Costs & Bills */}
-            <div className="bg-[#1c0f15] rounded-3xl border border-rose-500/30 overflow-hidden shadow-lg shadow-rose-950/20 flex flex-col transition-all hover:border-rose-500/50">
-              {/* Card Header */}
-              <div className="p-4 bg-gradient-to-r from-rose-950/60 to-transparent border-b border-rose-500/20 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
-                    <ArrowUpRight size={18} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-sm text-rose-300 uppercase tracking-wider">Debit · Costs & Bills</h3>
-                    <p className="text-[10px] text-slate-400">Expenses, purchases & bills</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <span className="font-bold text-sm sm:text-base text-rose-400 font-mono">
-                    -{currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onOpenAddModal && onOpenAddModal()}
-                    className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors"
-                    title="Add expense entry"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* List of Expense Transactions */}
-              <div className="p-2 divide-y divide-[#2a1b22] flex-1 flex flex-col justify-start min-h-[160px]">
-                {recentExpenseTransactions.length > 0 ? (
-                  recentExpenseTransactions.map((t) => (
-                    <div
-                      key={t._id}
-                      onClick={() => setEditingItem(t)}
-                      className="p-3 hover:bg-rose-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
-                          <ArrowUpRight size={14} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-bold text-xs sm:text-sm text-white group-hover:text-rose-300 transition-colors truncate">
-                              {t.notes || t.category?.name || 'Expense'}
-                            </p>
-                            {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
-                            {t.receiptImage && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
-                                <Camera size={8} />
-                                <span>Photo</span>
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5 flex items-center flex-wrap gap-1.5">
-                            <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
-                            {t.fundSource && (() => {
-                              const resolved = resolveFundSource(t.fundSource, transactions, categories);
-                              return (
-                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#2d1820] text-rose-300 border border-rose-500/30">
-                                  {resolved}
-                                </span>
-                              );
-                            })()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span className="font-bold text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
-                        -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                      <ArrowUpRight size={16} />
-                    </div>
-                    <p className="font-medium text-slate-300">No expenses logged for this month</p>
-                    <button
-                      type="button"
-                      onClick={() => onOpenAddModal && onOpenAddModal()}
-                      className="mt-1 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
-                    >
-                      <Plus size={13} />
-                      <span>Log Expense</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
+                    {categoryPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomPieTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-sm text-secondary-foreground">No expenses logged for this month</p>
+            )}
           </div>
         </div>
 
-        {/* Charts Row (Order 2 on Mobile & Desktop) */}
-        <div className="order-2 md:order-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Category Breakdown Pie Chart */}
-          <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
-            <div className="mb-4">
-              <h3 className="font-bold text-[15px] text-foreground">Where the money goes</h3>
-              <p className="text-xs text-secondary-foreground mt-0.5">Top expense categories for {format(selectedMonth, 'MMM yyyy')}</p>
+        {/* Daily Activity Full-Month Candles */}
+        <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-bold text-[15px] text-foreground">Daily Activity</h3>
+              <p className="text-xs text-secondary-foreground mt-0.5">Full month candles for {format(selectedMonth, 'MMMM yyyy')}</p>
             </div>
-            <div className="flex-1 flex items-center justify-center">
-              {categoryPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie
-                      data={categoryPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={70}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {categoryPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
+            <div className="flex items-center gap-3 text-[11px] font-semibold">
+              <span className="flex items-center gap-1.5 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                Income
+              </span>
+              <span className="flex items-center gap-1.5 text-rose-400">
+                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                Expense
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={dailyHistory} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={1}>
+                <XAxis 
+                  dataKey="day" 
+                  tickLine={false} 
+                  axisLine={{ stroke: '#1e293b' }} 
+                  tick={{ fontSize: 10, fill: '#64748b' }}
+                  interval={dailyHistory.length > 20 ? 2 : 0}
+                />
+                <YAxis hide />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(255, 255, 255, 0.05)', radius: 6 }}
+                  content={<CustomDailyTooltip />}
+                />
+                <Bar dataKey="Income" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={6} />
+                <Bar dataKey="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={6} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* High-Visibility Activity Section: Credit & Debit Cards (Mobile: Order 6, Desktop: Order 8) */}
+      <div className="order-6 md:order-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          
+          {/* Left Card: Credit — Money In */}
+          <div className="bg-[#0b1622] rounded-3xl border border-emerald-500/30 overflow-hidden shadow-lg shadow-emerald-950/20 flex flex-col transition-all hover:border-emerald-500/50">
+            {/* Card Header */}
+            <div className="p-4 bg-gradient-to-r from-emerald-950/60 to-transparent border-b border-emerald-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                  <ArrowDownRight size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xs sm:text-sm text-emerald-300 uppercase tracking-wider">Credit · Money In</h3>
+                  <p className="text-[10px] text-slate-400">Total earned & credited</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <span className="font-bold text-sm sm:text-base text-emerald-400 font-mono">
+                  +{currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
+                  title="Add income entry"
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* List of Income Transactions */}
+            <div className="p-2 divide-y divide-[#1e293b] flex-1 flex flex-col justify-start min-h-[160px]">
+              {recentIncomeTransactions.length > 0 ? (
+                recentIncomeTransactions.map((t) => (
+                  <div
+                    key={t._id}
+                    onClick={() => setEditingItem(t)}
+                    className="p-3 hover:bg-emerald-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <ArrowDownRight size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-bold text-xs sm:text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
+                            {t.notes || t.category?.name || 'Income'}
+                          </p>
+                          {t.receiptImage && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
+                              <Camera size={8} />
+                              <span>Photo</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="font-bold text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
+                      +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                ))
               ) : (
-                <p className="text-sm text-secondary-foreground">No expenses logged for this month</p>
+                <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <ArrowDownRight size={16} />
+                  </div>
+                  <p className="font-medium text-slate-300">No income logged for this month</p>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAddModal && onOpenAddModal()}
+                    className="mt-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus size={13} />
+                    <span>Log Income</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Daily Activity Full-Month Candles */}
-          <div className="bg-card rounded-2xl p-6 border border-border shadow-sm min-h-[260px] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-[15px] text-foreground">Daily Activity</h3>
-                <p className="text-xs text-secondary-foreground mt-0.5">Full month candles for {format(selectedMonth, 'MMMM yyyy')}</p>
+          {/* Right Card: Debit — Costs & Bills */}
+          <div className="bg-[#1c0f15] rounded-3xl border border-rose-500/30 overflow-hidden shadow-lg shadow-rose-950/20 flex flex-col transition-all hover:border-rose-500/50">
+            {/* Card Header */}
+            <div className="p-4 bg-gradient-to-r from-rose-950/60 to-transparent border-b border-rose-500/20 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+                  <ArrowUpRight size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xs sm:text-sm text-rose-300 uppercase tracking-wider">Debit · Costs & Bills</h3>
+                  <p className="text-[10px] text-slate-400">Expenses, purchases & bills</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-[11px] font-semibold">
-                <span className="flex items-center gap-1.5 text-emerald-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  Income
+
+              <div className="flex items-center gap-2.5">
+                <span className="font-bold text-sm sm:text-base text-rose-400 font-mono">
+                  -{currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
-                <span className="flex items-center gap-1.5 text-rose-400">
-                  <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-                  Expense
-                </span>
+                <button
+                  type="button"
+                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors"
+                  title="Add expense entry"
+                >
+                  <Plus size={14} />
+                </button>
               </div>
             </div>
-            
-            <div className="flex-1 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={dailyHistory} margin={{ top: 10, right: 0, left: 0, bottom: 0 }} barGap={1}>
-                  <XAxis 
-                    dataKey="day" 
-                    tickLine={false} 
-                    axisLine={{ stroke: '#1e293b' }} 
-                    tick={{ fontSize: 10, fill: '#64748b' }}
-                    interval={dailyHistory.length > 20 ? 2 : 0}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255, 255, 255, 0.05)', radius: 6 }}
-                    content={<CustomDailyTooltip />}
-                  />
-                  <Bar dataKey="Income" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={6} />
-                  <Bar dataKey="Expense" fill="#f43f5e" radius={[3, 3, 0, 0]} maxBarSize={6} />
-                </BarChart>
-              </ResponsiveContainer>
+
+            {/* List of Expense Transactions */}
+            <div className="p-2 divide-y divide-[#2a1b22] flex-1 flex flex-col justify-start min-h-[160px]">
+              {recentExpenseTransactions.length > 0 ? (
+                recentExpenseTransactions.map((t) => (
+                  <div
+                    key={t._id}
+                    onClick={() => setEditingItem(t)}
+                    className="p-3 hover:bg-rose-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
+                        <ArrowUpRight size={14} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-bold text-xs sm:text-sm text-white group-hover:text-rose-300 transition-colors truncate">
+                            {t.notes || t.category?.name || 'Expense'}
+                          </p>
+                          {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
+                          {t.receiptImage && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
+                              <Camera size={8} />
+                              <span>Photo</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center flex-wrap gap-1.5">
+                          <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
+                          {t.fundSource && (() => {
+                            const resolved = resolveFundSource(t.fundSource, transactions, categories);
+                            return (
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#2d1820] text-rose-300 border border-rose-500/30">
+                                {resolved}
+                              </span>
+                            );
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <span className="font-bold text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
+                      -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                    <ArrowUpRight size={16} />
+                  </div>
+                  <p className="font-medium text-slate-300">No expenses logged for this month</p>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAddModal && onOpenAddModal()}
+                    className="mt-1 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <Plus size={13} />
+                    <span>Log Expense</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Fund Source Breakdown & Totals (Mobile: Order 3, Desktop: Order 1) */}
-        <div className="order-3 md:order-1">
-          <FundBreakdownCard monthlyOnly={true} />
         </div>
-
       </div>
 
       {/* Essential Bills Section */}
