@@ -468,82 +468,82 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           
           {/* Left Card: Credit — Money In */}
-          <div className="bg-[#0b1622] rounded-3xl border border-emerald-500/30 overflow-hidden shadow-lg shadow-emerald-950/20 flex flex-col transition-all hover:border-emerald-500/50">
+          <div className="bg-[#0b1622] rounded-3xl border border-emerald-500/40 overflow-hidden shadow-xl shadow-emerald-950/30 flex flex-col transition-all hover:border-emerald-400/60">
             {/* Card Header */}
-            <div className="p-4 bg-gradient-to-r from-emerald-950/60 to-transparent border-b border-emerald-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                  <ArrowDownRight size={18} />
+            <div className="p-4 bg-gradient-to-r from-emerald-900/70 via-emerald-950/50 to-transparent border-b border-emerald-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/25 text-emerald-300 border border-emerald-400/30 flex items-center justify-center font-bold shadow-sm shrink-0">
+                  <ArrowDownRight size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-xs sm:text-sm text-emerald-300 uppercase tracking-wider">Credit · Money In</h3>
-                  <p className="text-[10px] text-slate-400">Total earned & credited</p>
+                  <h3 className="font-extrabold text-sm sm:text-base text-white tracking-wide">Credit · Money In</h3>
+                  <p className="text-xs text-emerald-300/90 font-medium">Total earned & credited</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5">
-                <span className="font-bold text-sm sm:text-base text-emerald-400 font-mono">
+                <span className="font-black text-base sm:text-lg text-emerald-300 font-mono">
                   +{currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
                 <button
                   type="button"
                   onClick={() => onOpenAddModal && onOpenAddModal()}
-                  className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
+                  className="w-7 h-7 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold flex items-center justify-center transition-colors shadow-md"
                   title="Add income entry"
                 >
-                  <Plus size={14} />
+                  <Plus size={15} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
 
             {/* List of Income Transactions */}
-            <div className="p-2 divide-y divide-[#1e293b] flex-1 flex flex-col justify-start min-h-[160px]">
+            <div className="p-2.5 divide-y divide-[#1e293b] flex-1 flex flex-col justify-start min-h-[160px]">
               {recentIncomeTransactions.length > 0 ? (
                 recentIncomeTransactions.map((t) => (
                   <div
                     key={t._id}
                     onClick={() => setEditingItem(t)}
-                    className="p-3 hover:bg-emerald-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
+                    className="p-3 hover:bg-emerald-500/10 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                        <ArrowDownRight size={14} />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                        <ArrowDownRight size={16} />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <p className="font-bold text-xs sm:text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
                             {t.notes || t.category?.name || 'Income'}
                           </p>
                           {t.receiptImage && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
-                              <Camera size={8} />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
+                              <Camera size={10} />
                               <span>Photo</span>
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-200 font-medium mt-0.5">
                           {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
                         </p>
                       </div>
                     </div>
 
-                    <span className="font-bold text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
+                    <span className="font-black text-sm sm:text-base text-emerald-400 font-mono shrink-0 whitespace-nowrap">
                       +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <ArrowDownRight size={16} />
+                <div className="p-6 text-center text-xs my-auto flex flex-col items-center justify-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center justify-center">
+                    <ArrowDownRight size={18} />
                   </div>
-                  <p className="font-medium text-slate-300">No income logged for this month</p>
+                  <p className="font-bold text-sm text-white">No income logged for this month</p>
                   <button
                     type="button"
                     onClick={() => onOpenAddModal && onOpenAddModal()}
-                    className="mt-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                    className="mt-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-950/40"
                   >
-                    <Plus size={13} />
+                    <Plus size={14} strokeWidth={2.5} />
                     <span>Log Income</span>
                   </button>
                 </div>
@@ -552,66 +552,66 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
           </div>
 
           {/* Right Card: Debit — Costs & Bills */}
-          <div className="bg-[#1c0f15] rounded-3xl border border-rose-500/30 overflow-hidden shadow-lg shadow-rose-950/20 flex flex-col transition-all hover:border-rose-500/50">
+          <div className="bg-[#1c0f15] rounded-3xl border border-rose-500/40 overflow-hidden shadow-xl shadow-rose-950/30 flex flex-col transition-all hover:border-rose-400/60">
             {/* Card Header */}
-            <div className="p-4 bg-gradient-to-r from-rose-950/60 to-transparent border-b border-rose-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
-                  <ArrowUpRight size={18} />
+            <div className="p-4 bg-gradient-to-r from-rose-900/70 via-rose-950/50 to-transparent border-b border-rose-500/30 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/25 text-rose-300 border border-rose-400/30 flex items-center justify-center font-bold shadow-sm shrink-0">
+                  <ArrowUpRight size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-xs sm:text-sm text-rose-300 uppercase tracking-wider">Debit · Costs & Bills</h3>
-                  <p className="text-[10px] text-slate-400">Expenses, purchases & bills</p>
+                  <h3 className="font-extrabold text-sm sm:text-base text-white tracking-wide">Debit · Costs & Bills</h3>
+                  <p className="text-xs text-rose-300/90 font-medium">Expenses, purchases & bills</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5">
-                <span className="font-bold text-sm sm:text-base text-rose-400 font-mono">
+                <span className="font-black text-base sm:text-lg text-rose-300 font-mono">
                   -{currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
                 <button
                   type="button"
                   onClick={() => onOpenAddModal && onOpenAddModal()}
-                  className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors"
+                  className="w-7 h-7 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold flex items-center justify-center transition-colors shadow-md"
                   title="Add expense entry"
                 >
-                  <Plus size={14} />
+                  <Plus size={15} strokeWidth={2.5} />
                 </button>
               </div>
             </div>
 
             {/* List of Expense Transactions */}
-            <div className="p-2 divide-y divide-[#2a1b22] flex-1 flex flex-col justify-start min-h-[160px]">
+            <div className="p-2.5 divide-y divide-[#2a1b22] flex-1 flex flex-col justify-start min-h-[160px]">
               {recentExpenseTransactions.length > 0 ? (
                 recentExpenseTransactions.map((t) => (
                   <div
                     key={t._id}
                     onClick={() => setEditingItem(t)}
-                    className="p-3 hover:bg-rose-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
+                    className="p-3 hover:bg-rose-500/10 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
                   >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
-                        <ArrowUpRight size={14} />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/20 flex items-center justify-center shrink-0">
+                        <ArrowUpRight size={16} />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="font-bold text-xs sm:text-sm text-white group-hover:text-rose-300 transition-colors truncate">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-sm text-white group-hover:text-rose-300 transition-colors truncate">
                             {t.notes || t.category?.name || 'Expense'}
                           </p>
-                          {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
+                          {t.isRecurring && <RefreshCcw size={12} className="text-primary shrink-0" title="Recurring" />}
                           {t.receiptImage && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
-                              <Camera size={8} />
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
+                              <Camera size={10} />
                               <span>Photo</span>
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-0.5 flex items-center flex-wrap gap-1.5">
+                        <p className="text-xs text-slate-200 font-medium mt-0.5 flex items-center flex-wrap gap-2">
                           <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
                           {t.fundSource && (() => {
                             const resolved = resolveFundSource(t.fundSource, transactions, categories);
                             return (
-                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#2d1820] text-rose-300 border border-rose-500/30">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#331722] text-rose-200 border border-rose-400/40">
                                 {resolved}
                               </span>
                             );
@@ -620,23 +620,23 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                       </div>
                     </div>
 
-                    <span className="font-bold text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
+                    <span className="font-black text-sm sm:text-base text-white font-mono shrink-0 whitespace-nowrap">
                       -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                     </span>
                   </div>
                 ))
               ) : (
-                <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center">
-                    <ArrowUpRight size={16} />
+                <div className="p-6 text-center text-xs my-auto flex flex-col items-center justify-center gap-2.5">
+                  <div className="w-9 h-9 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30 flex items-center justify-center">
+                    <ArrowUpRight size={18} />
                   </div>
-                  <p className="font-medium text-slate-300">No expenses logged for this month</p>
+                  <p className="font-bold text-sm text-white">No expenses logged for this month</p>
                   <button
                     type="button"
                     onClick={() => onOpenAddModal && onOpenAddModal()}
-                    className="mt-1 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                    className="mt-1 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-rose-950/40"
                   >
-                    <Plus size={13} />
+                    <Plus size={14} strokeWidth={2.5} />
                     <span>Log Expense</span>
                   </button>
                 </div>
