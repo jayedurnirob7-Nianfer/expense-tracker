@@ -88,6 +88,40 @@ const Sidebar = ({ isOpen, onClose }) => {
         </nav>
 
         <div className="p-4 mt-auto border-t border-border flex flex-col gap-2">
+          {/* User Account Info */}
+          {userProfile?.email && (
+            <div 
+              onClick={() => {
+                setActiveView('Settings');
+                onClose();
+              }}
+              className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/50 hover:bg-secondary border border-border cursor-pointer transition-colors group mb-1"
+              title="View Account & Security Settings"
+            >
+              {userProfile?.googlePicture ? (
+                <img 
+                  src={userProfile.googlePicture} 
+                  alt={userProfile.name || 'User'} 
+                  className="w-9 h-9 rounded-xl object-cover ring-1 ring-primary/40"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center font-bold text-sm">
+                  {(userProfile?.name || userProfile?.email || 'U')[0].toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-foreground truncate">{userProfile?.name || 'Account'}</p>
+                  {userProfile?.hasGoogleLinked && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Google Account Bound" />
+                  )}
+                </div>
+                <p className="text-[11px] text-secondary-foreground truncate font-mono">{userProfile?.email}</p>
+              </div>
+            </div>
+          )}
+
           <button
             onClick={toggleTheme}
             className="flex items-center justify-between px-4 py-2.5 rounded-xl text-secondary-foreground font-medium text-sm hover:bg-secondary hover:text-foreground transition-colors"

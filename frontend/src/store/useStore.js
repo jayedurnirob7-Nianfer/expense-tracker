@@ -42,7 +42,8 @@ const useStore = create((set, get) => ({
       state.fetchSettings(),
       state.fetchCategories(),
       state.fetchTransactions(),
-      state.fetchCrypto()
+      state.fetchCrypto(),
+      state.fetchProfile()
     ]);
   },
 
