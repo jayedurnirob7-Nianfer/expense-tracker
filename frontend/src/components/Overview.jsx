@@ -86,7 +86,8 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
     updateTransaction,
     cryptoSummary,
     cryptoHoldings,
-    setActiveView
+    setActiveView,
+    setDebitCreditTab
   } = useStore();
 
   const [editingItem, setEditingItem] = useState(null);
@@ -307,23 +308,46 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </h2>
       </div>
 
-      {/* Credit / Debit Mini Cards */}
+      {/* Credit / Debit Interactive Mini Cards */}
       <div className="order-4 grid grid-cols-2 gap-4">
-        <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-          <div className="flex items-center gap-2 text-primary uppercase tracking-wider text-xs font-bold mb-1.5">
-            <TrendingUp size={14} strokeWidth={3} />
-            Credit (Income)
+        {/* Credit (Income) Card */}
+        <div 
+          onClick={() => {
+            setDebitCreditTab('CREDIT');
+            setActiveView('DebitCredit');
+          }}
+          className="group bg-card hover:bg-emerald-500/10 border border-border hover:border-emerald-500/40 rounded-2xl p-4 sm:p-5 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.98]"
+          title="Click to view Credit (Income) ledger"
+        >
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <div className="flex items-center gap-2 text-emerald-400 uppercase tracking-wider text-xs font-bold">
+              <TrendingUp size={14} strokeWidth={3} />
+              <span>Credit (Income)</span>
+            </div>
+            <ArrowRightIcon size={14} className="text-secondary-foreground group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100 hidden sm:block" />
           </div>
-          <p className="text-xl font-bold text-foreground">
+          <p className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-white transition-colors font-mono">
             {currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-          <div className="flex items-center gap-2 text-orange-400 uppercase tracking-wider text-xs font-bold mb-1.5">
-            <TrendingDown size={14} strokeWidth={3} />
-            Debit (Expenses)
+
+        {/* Debit (Expenses) Card */}
+        <div 
+          onClick={() => {
+            setDebitCreditTab('DEBIT');
+            setActiveView('DebitCredit');
+          }}
+          className="group bg-card hover:bg-rose-500/10 border border-border hover:border-rose-500/40 rounded-2xl p-4 sm:p-5 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.98]"
+          title="Click to view Debit (Costs & Bills) ledger"
+        >
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <div className="flex items-center gap-2 text-rose-400 uppercase tracking-wider text-xs font-bold">
+              <TrendingDown size={14} strokeWidth={3} />
+              <span>Debit (Expenses)</span>
+            </div>
+            <ArrowRightIcon size={14} className="text-secondary-foreground group-hover:text-rose-400 group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100 hidden sm:block" />
           </div>
-          <p className="text-xl font-bold text-foreground">
+          <p className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-white transition-colors font-mono">
             {currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>

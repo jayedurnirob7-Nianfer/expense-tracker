@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowDownRight, 
   ArrowUpRight, 
@@ -28,14 +28,23 @@ const DebitCredit = () => {
     categories,
     settings, 
     selectedMonth,
-    setActiveView
+    setActiveView,
+    debitCreditTab,
+    setDebitCreditTab
   } = useStore();
 
   const [editingItem, setEditingItem] = useState(null);
   const [activeFundFilter, setActiveFundFilter] = useState('ALL'); // 'ALL' | 'Salary' | custom
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'DEBIT' | 'CREDIT' (for mobile)
+  const [activeTab, setActiveTab] = useState(debitCreditTab || 'ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFundCardOpen, setIsFundCardOpen] = useState(false);
+
+  // Sync if store tab updates
+  useEffect(() => {
+    if (debitCreditTab) {
+      setActiveTab(debitCreditTab);
+    }
+  }, [debitCreditTab]);
 
   const currency = settings?.currency || 'BDT';
 

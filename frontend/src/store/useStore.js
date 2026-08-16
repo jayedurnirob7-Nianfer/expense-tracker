@@ -27,6 +27,8 @@ const useStore = create((set, get) => ({
   isSetupComplete: true,
   activeView: 'Overview',
   selectedMonth: new Date(),
+  debitCreditTab: 'ALL',
+  setDebitCreditTab: (tab) => set({ debitCreditTab: tab }),
 
   // Crypto State
   cryptoHoldings: [],
