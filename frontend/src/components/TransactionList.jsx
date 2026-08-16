@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useStore from '../store/useStore';
 import { format } from 'date-fns';
-import { Search, RefreshCcw } from 'lucide-react';
+import { Search, RefreshCcw, Camera } from 'lucide-react';
 import EditTransactionModal from './EditTransactionModal';
 import { resolveFundSource } from '../utils/funds';
 
@@ -63,11 +63,17 @@ const TransactionList = () => {
                 className="hover:bg-secondary/30 cursor-pointer transition-colors group"
               >
                 <td className="p-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
                       {t.notes || t.category?.name || 'Transaction'}
                     </span>
                     {t.isRecurring && <RefreshCcw size={12} className="text-primary shrink-0" title="Recurring" />}
+                    {t.receiptImage && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20" title="Photo attached">
+                        <Camera size={10} />
+                        <span>Receipt</span>
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-secondary-foreground mt-0.5">
                     {format(new Date(t.date), 'MMM dd, yyyy')}

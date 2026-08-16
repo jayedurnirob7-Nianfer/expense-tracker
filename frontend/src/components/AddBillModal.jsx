@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
-import { X, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
+import { X, ChevronDown, Calendar as CalendarIcon, Camera, Trash2, Upload, Sparkles } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
+import { compressImage } from '../utils/imageCompressor';
 
 import { getAvailableFundOptions } from '../utils/funds';
 
@@ -14,6 +15,12 @@ const AddBillModal = ({ onClose }) => {
   const [dueDate, setDueDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isEssential, setIsEssential] = useState(true);
+  const [receiptImage, setReceiptImage] = useState('');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
+
+  const cameraInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fund / Paid From state - automatically includes active income funds and Miscellaneous
   const [customFunds, setCustomFunds] = useState([]);
@@ -62,6 +69,30 @@ const AddBillModal = ({ onClose }) => {
     setShowAddFund(false);
   };
 
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError('');
+    setIsProcessingImage(true);
+
+    try {
+      const compressedDataUrl = await compressImage(file, 1200, 1200, 0.82);
+      setReceiptImage(compressedDataUrl);
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      setImageError(err.message || 'Failed to process image');
+    } finally {
+      setIsProcessingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setReceiptImage('');
+    setImageError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !amount) return;
@@ -77,7 +108,8 @@ const AddBillModal = ({ onClose }) => {
       fundSource: fundSource || 'Salary',
       isRecurring: true,
       status: 'Pending',
-      isEssential
+      isEssential,
+      receiptImage: receiptImage || undefined
     });
 
     onClose();
@@ -276,6 +308,114 @@ const AddBillModal = ({ onClose }) => {
                 }`}
               />
             </button>
+          </div>
+
+          {/* Receipt / Contract Photo Attachment */}
+          <div className="pt-1">
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Camera size={14} className="text-emerald-400" />
+                <span>Attach Bill / Contract Photo (Optional)</span>
+              </label>
+              {receiptImage && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
+                >
+                  <Trash2 size={12} />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
+
+            {/* Hidden native file inputs for Camera and File Picker */}
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              accept="image/*" 
+              capture="environment" 
+              onChange={handleImageSelect} 
+              className="hidden" 
+            />
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              onChange={handleImageSelect} 
+              className="hidden" 
+            />
+
+            {imageError && (
+              <p className="text-xs text-rose-400 mb-2">{imageError}</p>
+            )}
+
+            {isProcessingImage ? (
+              <div className="w-full py-6 rounded-2xl bg-[#131d2b] border border-dashed border-[#1e293b] flex flex-col items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-slate-400 font-medium">Optimizing photo...</span>
+              </div>
+            ) : receiptImage ? (
+              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/30 bg-[#131d2b] group">
+                <img 
+                  src={receiptImage} 
+                  alt="Bill / Contract Preview" 
+                  className="w-full max-h-48 object-contain bg-black/40"
+                />
+                <div className="p-2.5 bg-[#0e1621]/90 backdrop-blur border-t border-[#1e293b] flex items-center justify-between">
+                  <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                    <Sparkles size={13} />
+                    <span>Photo attached</span>
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
+                    >
+                      Retake
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
+                    <Camera size={16} />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xs font-bold text-white leading-tight">Camera</p>
+                    <p className="text-[10px] text-slate-400">Take a photo</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                    <Upload size={16} />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xs font-bold text-white leading-tight">Upload</p>
+                    <p className="text-[10px] text-slate-400">From gallery</p>
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}

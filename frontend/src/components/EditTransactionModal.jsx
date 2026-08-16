@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
-import { X, Calendar as CalendarIcon, ChevronDown, Check, Trash2, Lock, ShieldAlert } from 'lucide-react';
+import { X, Calendar as CalendarIcon, ChevronDown, Check, Trash2, Lock, ShieldAlert, Camera, Image as ImageIcon, Upload, Maximize2, Download, ExternalLink } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
 import api from '../api';
+import { compressImage } from '../utils/imageCompressor';
 
 import { resolveFundSource, getAvailableFundOptions } from '../utils/funds';
 
@@ -18,6 +19,13 @@ const EditTransactionModal = ({ item, onClose }) => {
   const [date, setDate] = useState(item.date ? new Date(item.date) : new Date());
   const [status, setStatus] = useState(item.status || 'Paid');
   const [isEssential, setIsEssential] = useState(item.isEssential !== undefined ? Boolean(item.isEssential) : Boolean(item.isRecurring));
+  const [receiptImage, setReceiptImage] = useState(item.receiptImage || '');
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [imageError, setImageError] = useState('');
+  const [showLightbox, setShowLightbox] = useState(false);
+
+  const cameraInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fund / Paid From state - automatically includes active income funds and Miscellaneous
   const [customFunds, setCustomFunds] = useState([]);
@@ -86,6 +94,30 @@ const EditTransactionModal = ({ item, onClose }) => {
     await performSave();
   };
 
+  const handleImageSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageError('');
+    setIsProcessingImage(true);
+
+    try {
+      const compressedDataUrl = await compressImage(file, 1200, 1200, 0.82);
+      setReceiptImage(compressedDataUrl);
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      setImageError(err.message || 'Failed to process image');
+    } finally {
+      setIsProcessingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setReceiptImage('');
+    setImageError('');
+  };
+
   const performSave = async () => {
     const catId = currentCategory ? currentCategory._id : (currentCategories[0]?._id || '');
 
@@ -97,7 +129,8 @@ const EditTransactionModal = ({ item, onClose }) => {
       date: date || new Date(),
       fundSource: type === 'Expense' ? (fundSource || 'Salary') : undefined,
       status,
-      isEssential
+      isEssential,
+      receiptImage: receiptImage || ''
     });
 
     onClose();
@@ -370,6 +403,130 @@ const EditTransactionModal = ({ item, onClose }) => {
             </div>
           )}
 
+          {/* Receipt / Voucher Photo Attachment */}
+          <div className="pt-1">
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Camera size={14} className="text-emerald-400" />
+                <span>Attached Receipt / Photo</span>
+              </label>
+              {receiptImage && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
+                >
+                  <Trash2 size={12} />
+                  <span>Remove Photo</span>
+                </button>
+              )}
+            </div>
+
+            {/* Hidden native file inputs for Camera and File Picker */}
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              accept="image/*" 
+              capture="environment" 
+              onChange={handleImageSelect} 
+              className="hidden" 
+            />
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              accept="image/*" 
+              onChange={handleImageSelect} 
+              className="hidden" 
+            />
+
+            {imageError && (
+              <p className="text-xs text-rose-400 mb-2">{imageError}</p>
+            )}
+
+            {isProcessingImage ? (
+              <div className="w-full py-6 rounded-2xl bg-[#131d2b] border border-dashed border-[#1e293b] flex flex-col items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-slate-400 font-medium">Optimizing photo...</span>
+              </div>
+            ) : receiptImage ? (
+              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/30 bg-[#131d2b] group">
+                <div 
+                  onClick={() => setShowLightbox(true)}
+                  className="cursor-pointer relative overflow-hidden flex items-center justify-center bg-black/40 max-h-52"
+                  title="Click to view full screen"
+                >
+                  <img 
+                    src={receiptImage} 
+                    alt="Receipt / Voucher" 
+                    className="w-full max-h-52 object-contain hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity text-white text-xs font-semibold backdrop-blur-[2px]">
+                    <Maximize2 size={16} />
+                    <span>View Fullscreen</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-[#0e1621]/90 backdrop-blur border-t border-[#1e293b] flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowLightbox(true)}
+                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Maximize2 size={13} />
+                    <span>Expand Photo</span>
+                  </button>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
+                    >
+                      Retake
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
+                    >
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
+                    <Camera size={16} />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xs font-bold text-white leading-tight">Camera</p>
+                    <p className="text-[10px] text-slate-400">Take photo</p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
+                    <Upload size={16} />
+                  </div>
+                  <div className="text-center sm:text-left">
+                    <p className="text-xs font-bold text-white leading-tight">Upload</p>
+                    <p className="text-[10px] text-slate-400">From gallery</p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Password Prompt UI (for Delete or Unpay) */}
           {showPasswordPrompt ? (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-3 animate-in fade-in">
@@ -441,6 +598,57 @@ const EditTransactionModal = ({ item, onClose }) => {
         </form>
 
       </div>
+
+      {/* Full-Screen Lightbox Modal */}
+      {showLightbox && receiptImage && (
+        <div 
+          className="fixed inset-0 min-h-[100dvh] w-full h-full bg-black/95 z-[120] flex flex-col items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowLightbox(false)}
+        >
+          {/* Lightbox Top Bar */}
+          <div 
+            className="w-full max-w-4xl flex items-center justify-between p-4 text-white mb-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div>
+              <h3 className="font-bold text-base text-white">{notes || item.category?.name || 'Receipt Photo'}</h3>
+              <p className="text-xs text-slate-400">{format(new Date(date), 'MMMM dd, yyyy')}</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <a
+                href={receiptImage}
+                download={`receipt_${format(new Date(date), 'yyyy-MM-dd')}.jpg`}
+                className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                title="Download full photo"
+              >
+                <Download size={16} />
+                <span className="hidden sm:inline">Download</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setShowLightbox(false)}
+                className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white transition-colors"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Image Container */}
+          <div 
+            className="max-w-4xl max-h-[85vh] overflow-auto flex items-center justify-center p-2 rounded-2xl bg-black/50 border border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={receiptImage} 
+              alt="Full Resolution Receipt" 
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

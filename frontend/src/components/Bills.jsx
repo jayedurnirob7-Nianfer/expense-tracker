@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, RefreshCcw, CheckCircle2, Clock, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, RefreshCcw, CheckCircle2, Clock, AlertTriangle, ArrowLeft, Camera } from 'lucide-react';
 import { format, isSameMonth } from 'date-fns';
 import useStore from '../store/useStore';
 import EditTransactionModal from './EditTransactionModal';
@@ -211,11 +211,17 @@ const Bills = ({ onOpenAddBillModal }) => {
                     </div>
                   )}
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">
                         {b.notes || b.category?.name || 'Bill'}
                       </p>
                       {b.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
+                      {b.receiptImage && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                          <Camera size={9} />
+                          <span>Receipt</span>
+                        </span>
+                      )}
                       {overdue && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
                           ⚠️ Overdue

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowDownRight, ArrowUpRight, RefreshCcw, Filter, Layers, ArrowLeft } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, RefreshCcw, Filter, Layers, ArrowLeft, Camera } from 'lucide-react';
 import { format, isSameMonth } from 'date-fns';
 import useStore from '../store/useStore';
 import EditTransactionModal from './EditTransactionModal';
@@ -137,7 +137,15 @@ const DebitCredit = () => {
                   className="pt-2 first:pt-0 flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all"
                 >
                   <div>
-                    <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Income'}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Income'}</p>
+                      {t.receiptImage && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                          <Camera size={9} />
+                          <span>Receipt</span>
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-secondary-foreground">
                       {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
                     </p>
@@ -181,9 +189,15 @@ const DebitCredit = () => {
                   className="pt-2 first:pt-0 flex items-center justify-between gap-3 p-2 rounded-xl cursor-pointer hover:bg-secondary/30 transition-all"
                 >
                   <div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Expense'}</p>
                       {t.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
+                      {t.receiptImage && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                          <Camera size={9} />
+                          <span>Receipt</span>
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
                       <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
