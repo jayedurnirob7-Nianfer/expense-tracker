@@ -30,34 +30,59 @@ function App() {
     }
   }, [isAuthenticated, isLocked, fetchData]);
 
-  // Inactivity timeout logic (15 minutes timeout with touch & click listeners)
+  // 5-minute Inactivity timeout and background tab lock logic
   useEffect(() => {
     let inactivityTimer;
-    const resetTimer = () => {
-      clearTimeout(inactivityTimer);
+    const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+    const updateActivity = () => {
       if (isAuthenticated && !isLocked) {
+        localStorage.setItem('last_active_time', Date.now().toString());
+        clearTimeout(inactivityTimer);
         inactivityTimer = setTimeout(() => {
           lockApp();
-        }, 15 * 60 * 1000); // 15 minutes of complete inactivity
+        }, LOCK_TIMEOUT_MS);
+      }
+    };
+
+    const checkLockStatus = () => {
+      if (isAuthenticated && !isLocked) {
+        const lastActive = Number(localStorage.getItem('last_active_time') || 0);
+        if (lastActive && (Date.now() - lastActive >= LOCK_TIMEOUT_MS)) {
+          lockApp();
+        } else {
+          updateActivity();
+        }
+      }
+    };
+
+    const throttledActivity = () => {
+      const last = Number(localStorage.getItem('last_active_time') || 0);
+      if (Date.now() - last > 5000) { // Throttle localStorage writes to once every 5 seconds
+        updateActivity();
       }
     };
 
     if (isAuthenticated && !isLocked) {
-      resetTimer();
-      window.addEventListener('mousemove', resetTimer);
-      window.addEventListener('mousedown', resetTimer);
-      window.addEventListener('touchstart', resetTimer);
-      window.addEventListener('keydown', resetTimer);
-      window.addEventListener('scroll', resetTimer);
+      updateActivity();
+      window.addEventListener('mousemove', throttledActivity);
+      window.addEventListener('mousedown', updateActivity);
+      window.addEventListener('touchstart', updateActivity);
+      window.addEventListener('keydown', updateActivity);
+      window.addEventListener('scroll', throttledActivity);
+      window.addEventListener('focus', checkLockStatus);
+      document.addEventListener('visibilitychange', checkLockStatus);
     }
 
     return () => {
       clearTimeout(inactivityTimer);
-      window.removeEventListener('mousemove', resetTimer);
-      window.removeEventListener('mousedown', resetTimer);
-      window.removeEventListener('touchstart', resetTimer);
-      window.removeEventListener('keydown', resetTimer);
-      window.removeEventListener('scroll', resetTimer);
+      window.removeEventListener('mousemove', throttledActivity);
+      window.removeEventListener('mousedown', updateActivity);
+      window.removeEventListener('touchstart', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('scroll', throttledActivity);
+      window.removeEventListener('focus', checkLockStatus);
+      document.removeEventListener('visibilitychange', checkLockStatus);
     };
   }, [isAuthenticated, isLocked, lockApp]);
 

@@ -2,9 +2,28 @@ import { create } from 'zustand';
 import { addMonths, subMonths } from 'date-fns';
 import api from '../api';
 
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+const getInitialAuthState = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return { isAuthenticated: false, isLocked: false };
+  }
+  const lastActive = Number(localStorage.getItem('last_active_time') || 0);
+  const now = Date.now();
+  const isExpired = !lastActive || (now - lastActive > INACTIVITY_TIMEOUT_MS);
+
+  return {
+    isAuthenticated: true,
+    isLocked: isExpired
+  };
+};
+
+const initialAuth = getInitialAuthState();
+
 const useStore = create((set, get) => ({
-  isAuthenticated: false,
-  isLocked: !!localStorage.getItem('token'),
+  isAuthenticated: initialAuth.isAuthenticated,
+  isLocked: initialAuth.isLocked,
   isSetupComplete: true,
   activeView: 'Overview',
   selectedMonth: new Date(),
@@ -53,6 +72,7 @@ const useStore = create((set, get) => ({
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
       }
+      localStorage.setItem('last_active_time', Date.now().toString());
       set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
       get().fetchData();
       return { success: true };
@@ -69,6 +89,7 @@ const useStore = create((set, get) => ({
       const res = await api.post('/auth/setup', { password });
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
+        localStorage.setItem('last_active_time', Date.now().toString());
         set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
         get().fetchData();
       } else {
@@ -89,6 +110,7 @@ const useStore = create((set, get) => ({
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
       }
+      localStorage.setItem('last_active_time', Date.now().toString());
       set({ 
         isAuthenticated: true, 
         isLocked: false, 
@@ -122,6 +144,7 @@ const useStore = create((set, get) => ({
       if (res.data.token) {
         localStorage.setItem('token', res.data.token);
       }
+      localStorage.setItem('last_active_time', Date.now().toString());
       set({ isAuthenticated: true, isLocked: false, isSetupComplete: true });
       get().fetchData();
       return { success: true, message: res.data.message };
@@ -180,10 +203,14 @@ const useStore = create((set, get) => ({
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('last_active_time');
     set({ isAuthenticated: false, isLocked: false, userProfile: null });
   },
 
-  lockApp: () => set({ isLocked: true }),
+  lockApp: () => {
+    localStorage.setItem('last_active_time', '0');
+    set({ isLocked: true });
+  },
 
   userProfile: null,
   hasBoundEmail: false,
