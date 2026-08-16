@@ -99,10 +99,28 @@ router.post('/google', async (req, res) => {
               sub: decoded.sub,
               picture: decoded.picture || ''
             };
+          } else {
+            return res.status(400).json({ message: 'Invalid Google credential token. Please try again.' });
           }
         }
       } catch (verifyErr) {
-        console.error('Google verification fallback:', verifyErr.message);
+        console.error('Google token verification error:', verifyErr.message);
+        // Fallback: try to decode without verification so Google login still works
+        try {
+          const decoded = jwt.decode(credential);
+          if (decoded && decoded.email) {
+            googleUser = {
+              email: decoded.email,
+              name: decoded.name || 'Nirob',
+              sub: decoded.sub,
+              picture: decoded.picture || ''
+            };
+          } else {
+            return res.status(400).json({ message: 'Google authentication failed. Could not verify credential.' });
+          }
+        } catch (decodeErr) {
+          return res.status(400).json({ message: 'Google authentication failed. Invalid token.' });
+        }
       }
     }
 

@@ -52,6 +52,8 @@ const Auth = () => {
   const [newMasterPassword, setNewMasterPassword] = useState('');
   const [sentMaskedEmail, setSentMaskedEmail] = useState('');
 
+  // Hardcoded as primary — this is a PUBLIC client ID (not a secret). 
+  // Env var override is optional. Prevents Vercel build issues where env vars get lost.
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '534810784499-nqlllp8mu0dhljpb768trr3u80g1vuj8.apps.googleusercontent.com';
   const googleBtnContainerRef = useRef(null);
 
@@ -67,15 +69,22 @@ const Auth = () => {
           window.google.accounts.id.initialize({
             client_id: googleClientId,
             auto_select: false,
+            itp_support: true,
             callback: async (response) => {
               if (response.credential) {
                 setLoading(true);
-                const res = await loginWithGoogle({ credential: response.credential });
-                setLoading(false);
-                if (res.success) {
-                  setAccessGranted(true);
-                } else {
-                  setError(res.message || 'Access Denied for this Google account.');
+                setError('');
+                try {
+                  const res = await loginWithGoogle({ credential: response.credential });
+                  if (res.success) {
+                    setAccessGranted(true);
+                  } else {
+                    setError(res.message || 'Access Denied for this Google account.');
+                  }
+                } catch (err) {
+                  setError('Google authentication failed. Please try again.');
+                } finally {
+                  setLoading(false);
                 }
               }
             }
@@ -83,6 +92,8 @@ const Auth = () => {
 
           // Render official Google button if container exists
           if (googleBtnContainerRef.current) {
+            // Clear previous renders
+            googleBtnContainerRef.current.innerHTML = '';
             window.google.accounts.id.renderButton(googleBtnContainerRef.current, {
               theme: 'filled_black',
               size: 'large',
@@ -93,7 +104,8 @@ const Auth = () => {
             });
           }
         } catch (e) {
-          console.warn('GIS Init warning:', e);
+          console.error('GIS Init error:', e);
+          setError('Google Sign-In initialization failed. Please refresh the page.');
         }
       }
     };
@@ -107,43 +119,67 @@ const Auth = () => {
           initGIS();
         }
       }, 300);
-      return () => clearInterval(timer);
+      // Timeout after 10 seconds — GIS script may have failed to load
+      const timeout = setTimeout(() => {
+        clearInterval(timer);
+      }, 10000);
+      return () => {
+        clearInterval(timer);
+        clearTimeout(timeout);
+      };
     }
   }, [googleClientId, loginWithGoogle, isRecoveryMode]);
 
   const handleGoogleAuth = () => {
     setError('');
     
-    // First try standard Google Identity Services prompt
+    // The rendered Google button handles most cases via GIS callback.
+    // This handler is for manual trigger / fallback scenarios.
     if (window.google?.accounts?.id) {
       try {
         window.google.accounts.id.prompt((notification) => {
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            // Fallback to OAuth2 token client if One Tap prompt was skipped
-            fallbackOAuthClient();
+          if (notification.isNotDisplayed()) {
+            console.warn('One Tap not displayed, reason:', notification.getNotDisplayedReason());
+            // Fallback to OAuth2 popup flow
+            fallbackOAuthPopup();
+          } else if (notification.isSkippedMoment()) {
+            console.warn('One Tap skipped, reason:', notification.getSkippedReason());
+            fallbackOAuthPopup();
           }
         });
         return;
       } catch (err) {
-        fallbackOAuthClient();
+        console.error('GIS prompt error:', err);
+        fallbackOAuthPopup();
         return;
       }
     }
 
-    fallbackOAuthClient();
+    fallbackOAuthPopup();
   };
 
-  const fallbackOAuthClient = () => {
+  const fallbackOAuthPopup = () => {
     if (window.google?.accounts?.oauth2) {
       try {
         setLoading(true);
         const tokenClient = window.google.accounts.oauth2.initTokenClient({
           client_id: googleClientId,
           scope: 'email profile openid',
+          error_callback: (err) => {
+            setLoading(false);
+            console.error('Google OAuth error_callback:', err);
+            if (err.type === 'popup_closed') {
+              setError('Google sign-in popup was closed. Please try again.');
+            } else if (err.type === 'popup_failed_to_open') {
+              setError('Popup blocked. Please allow popups for this site and try again.');
+            } else {
+              setError(`Google sign-in error: ${err.message || err.type || 'Unknown error'}`);
+            }
+          },
           callback: async (tokenResponse) => {
             if (tokenResponse.error) {
               setLoading(false);
-              setError(tokenResponse.error_description || 'Google sign-in cancelled or blocked.');
+              setError(tokenResponse.error_description || `Google sign-in error: ${tokenResponse.error}`);
               return;
             }
             if (tokenResponse.access_token) {
@@ -151,6 +187,9 @@ const Auth = () => {
                 const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                   headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
                 });
+                if (!userRes.ok) {
+                  throw new Error(`Google API returned ${userRes.status}`);
+                }
                 const googleProfile = await userRes.json();
                 
                 if (googleProfile.email) {
@@ -168,6 +207,7 @@ const Auth = () => {
                   setError('Failed to retrieve verified email from Google.');
                 }
               } catch (fetchErr) {
+                console.error('Google profile fetch error:', fetchErr);
                 setError('Failed to verify Google profile. Please try again.');
               } finally {
                 setLoading(false);
