@@ -11,6 +11,12 @@ import { getAvailableFundOptions } from '../utils/funds';
 const AddTransactionModal = ({ onClose, initialType = 'Expense' }) => {
   const { categories, transactions, addCategory, addTransaction } = useStore();
   const [type, setType] = useState(initialType);
+
+  useEffect(() => {
+    if (initialType) {
+      setType(initialType);
+    }
+  }, [initialType]);
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [date, setDate] = useState(new Date());

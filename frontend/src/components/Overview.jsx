@@ -549,7 +549,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  onClick={() => onOpenAddModal && onOpenAddModal('Income')}
                   className="w-7 h-7 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold flex items-center justify-center transition-colors shadow-md"
                   title="Add income entry"
                 >
@@ -602,7 +602,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                   <p className="font-bold text-sm text-white">No income logged for this month</p>
                   <button
                     type="button"
-                    onClick={() => onOpenAddModal && onOpenAddModal()}
+                    onClick={() => onOpenAddModal && onOpenAddModal('Income')}
                     className="mt-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-950/40"
                   >
                     <Plus size={14} strokeWidth={2.5} />
@@ -633,7 +633,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                 </span>
                 <button
                   type="button"
-                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  onClick={() => onOpenAddModal && onOpenAddModal('Expense')}
                   className="w-7 h-7 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold flex items-center justify-center transition-colors shadow-md"
                   title="Add expense entry"
                 >
@@ -695,7 +695,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                   <p className="font-bold text-sm text-white">No expenses logged for this month</p>
                   <button
                     type="button"
-                    onClick={() => onOpenAddModal && onOpenAddModal()}
+                    onClick={() => onOpenAddModal && onOpenAddModal('Expense')}
                     className="mt-1 px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-rose-950/40"
                   >
                     <Plus size={14} strokeWidth={2.5} />
@@ -950,8 +950,9 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
               <button
                 type="button"
                 onClick={() => {
+                  const targetType = quickModalType === 'CREDIT' ? 'Income' : 'Expense';
                   setQuickModalType(null);
-                  if (onOpenAddModal) onOpenAddModal();
+                  if (onOpenAddModal) onOpenAddModal(targetType);
                 }}
                 className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 ${
                   quickModalType === 'CREDIT'

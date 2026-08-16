@@ -20,9 +20,15 @@ function App() {
     activeView
   } = useStore();
 
+  const [addTxType, setAddTxType] = useState('Expense');
   const [isAddTxOpen, setIsAddTxOpen] = useState(false);
   const [isAddBillOpen, setIsAddBillOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const handleOpenAddTx = (type = 'Expense') => {
+    setAddTxType(type);
+    setIsAddTxOpen(true);
+  };
 
   useEffect(() => {
     if (isAuthenticated && !isLocked) {
@@ -92,12 +98,12 @@ function App() {
 
   const renderView = () => {
     switch (activeView) {
-      case 'Overview': return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
+      case 'Overview': return <Overview onOpenAddModal={handleOpenAddTx} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
       case 'DebitCredit': return <DebitCredit />;
       case 'Bills': return <Bills onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
       case 'Crypto': return <CryptoPortfolio />;
       case 'Settings': return <SettingsView />;
-      default: return <Overview onOpenAddModal={() => setIsAddTxOpen(true)} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
+      default: return <Overview onOpenAddModal={handleOpenAddTx} onOpenAddBillModal={() => setIsAddBillOpen(true)} />;
     }
   };
 
@@ -107,7 +113,7 @@ function App() {
       
       <Header 
         onOpenSidebar={() => setIsSidebarOpen(true)}
-        onOpenAddModal={() => setIsAddTxOpen(true)} 
+        onOpenAddModal={() => handleOpenAddTx('Expense')} 
       />
       
       <main className="py-6 px-4 sm:px-6 lg:px-8">
@@ -115,7 +121,7 @@ function App() {
       </main>
 
       {isAddTxOpen && (
-        <AddTransactionModal onClose={() => setIsAddTxOpen(false)} />
+        <AddTransactionModal initialType={addTxType} onClose={() => setIsAddTxOpen(false)} />
       )}
 
       {isAddBillOpen && (
