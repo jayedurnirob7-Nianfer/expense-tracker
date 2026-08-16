@@ -966,22 +966,22 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
             </div>
 
             {/* Scrollable Transaction List */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 divide-y divide-[#1e293b] space-y-2">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-2.5">
               {quickModalType === 'CREDIT' ? (
                 modalCreditItems.length > 0 ? (
                   modalCreditItems.map(t => (
                     <div
                       key={t._id}
                       onClick={() => setEditingItem(t)}
-                      className="pt-2 first:pt-0 p-3 rounded-2xl bg-[#111c29]/60 hover:bg-emerald-500/10 border border-[#1e2d3f] hover:border-emerald-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99]"
+                      className="w-full p-3.5 rounded-2xl bg-[#111c29]/90 hover:bg-emerald-500/10 border border-[#1e2d3f] hover:border-emerald-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 box-border active:scale-[0.99]"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 flex items-center justify-center shrink-0">
                           <ArrowDownRight size={16} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[190px] sm:max-w-xs">
+                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[180px] sm:max-w-xs">
                               {t.notes || t.category?.name || 'Income'}
                             </p>
                             {t.receiptImage && (
@@ -991,13 +991,13 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-300 mt-0.5">
+                          <p className="text-[11px] text-slate-300 mt-0.5 truncate">
                             {format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Income'}
                           </p>
                         </div>
                       </div>
 
-                      <span className="font-black text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
+                      <span className="font-black text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap text-right pl-2">
                         +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
@@ -1016,15 +1016,15 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                     <div
                       key={t._id}
                       onClick={() => setEditingItem(t)}
-                      className="pt-2 first:pt-0 p-3 rounded-2xl bg-[#1c1218]/60 hover:bg-rose-500/10 border border-[#311c26] hover:border-rose-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99]"
+                      className="w-full p-3.5 rounded-2xl bg-[#1c1218]/90 hover:bg-rose-500/10 border border-[#381e2b] hover:border-rose-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 box-border active:scale-[0.99]"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/20 flex items-center justify-center shrink-0">
                           <ArrowUpRight size={16} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[190px] sm:max-w-xs">
+                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[180px] sm:max-w-xs">
                               {t.notes || t.category?.name || 'Expense'}
                             </p>
                             {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
@@ -1035,7 +1035,7 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-300 mt-0.5 flex items-center flex-wrap gap-1.5">
+                          <div className="text-[11px] text-slate-300 mt-0.5 flex items-center flex-wrap gap-1.5">
                             <span>{format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Expense'}</span>
                             {t.fundSource && (() => {
                               const resolved = resolveFundSource(t.fundSource, transactions, categories);
@@ -1045,11 +1045,11 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                                 </span>
                               );
                             })()}
-                          </p>
+                          </div>
                         </div>
                       </div>
 
-                      <span className="font-black text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
+                      <span className="font-black text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap text-right pl-2">
                         -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>

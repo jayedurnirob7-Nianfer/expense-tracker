@@ -59,7 +59,7 @@ const Header = ({ onOpenSidebar, onOpenAddModal }) => {
 
             <button
               onClick={toggleTheme}
-              className="p-2.5 rounded-2xl border border-border bg-card text-foreground hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+              className="hidden sm:flex items-center justify-center p-2.5 rounded-2xl border border-border bg-card text-foreground hover:bg-secondary transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-slate-700" />}
