@@ -4,7 +4,7 @@ import { X, ChevronDown, Calendar as CalendarIcon, Camera, Trash2, Upload, Spark
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
-import { compressImage } from '../utils/imageCompressor';
+import { compressImage, uploadToImgBB } from '../utils/imageCompressor';
 
 import { getAvailableFundOptions } from '../utils/funds';
 
@@ -77,11 +77,11 @@ const AddBillModal = ({ onClose }) => {
     setIsProcessingImage(true);
 
     try {
-      const compressedDataUrl = await compressImage(file, 1200, 1200, 0.82);
-      setReceiptImage(compressedDataUrl);
+      const cdnImageUrl = await uploadToImgBB(file);
+      setReceiptImage(cdnImageUrl);
     } catch (err) {
-      console.error('Image compression failed:', err);
-      setImageError(err.message || 'Failed to process image');
+      console.error('Image upload failed:', err);
+      setImageError(err.message || 'Failed to upload photo. Please try again.');
     } finally {
       setIsProcessingImage(false);
       e.target.value = '';
@@ -353,7 +353,7 @@ const AddBillModal = ({ onClose }) => {
             {isProcessingImage ? (
               <div className="w-full py-6 rounded-2xl bg-[#131d2b] border border-dashed border-[#1e293b] flex flex-col items-center justify-center gap-2">
                 <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-slate-400 font-medium">Optimizing photo...</span>
+                <span className="text-xs text-slate-400 font-medium">Uploading to cloud CDN...</span>
               </div>
             ) : receiptImage ? (
               <div className="relative rounded-2xl overflow-hidden border border-emerald-500/30 bg-[#131d2b] group">
