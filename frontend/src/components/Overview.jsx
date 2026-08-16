@@ -647,8 +647,8 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </div>
       </div>
 
-      {/* Essential Bills Section */}
-      <div className="pt-2 space-y-4">
+      {/* Essential Bills Section (Always at the bottom) */}
+      <div className="order-9 md:order-9 pt-2 space-y-4">
         <div className="bg-card rounded-2xl p-6 border border-border shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="text-lg font-bold mb-1">Essential bills</h3>
