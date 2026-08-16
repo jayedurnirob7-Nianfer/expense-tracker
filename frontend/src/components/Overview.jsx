@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight, Coins, ChevronRight as ArrowRightIcon, Camera, Wallet } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight, Coins, ChevronRight as ArrowRightIcon, Camera, Wallet, X, Search, Filter } from 'lucide-react';
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
@@ -93,6 +93,19 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   const [editingItem, setEditingItem] = useState(null);
   const [activeBillAction, setActiveBillAction] = useState(null);
   const [selectedBillIds, setSelectedBillIds] = useState([]);
+  const [quickModalType, setQuickModalType] = useState(null); // 'CREDIT' | 'DEBIT' | null
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+
+  // Close quick popup modal on Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setQuickModalType(null);
+    };
+    if (quickModalType) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [quickModalType]);
 
   const currency = settings?.currency || 'BDT';
 
@@ -183,6 +196,31 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
   const recentExpenseTransactions = useMemo(() => {
     return recentTransactions.filter(t => t.type === 'Expense');
   }, [recentTransactions]);
+
+  const modalCreditItems = useMemo(() => {
+    if (quickModalType !== 'CREDIT') return [];
+    return recentIncomeTransactions.filter(t => {
+      if (!modalSearchQuery.trim()) return true;
+      const q = modalSearchQuery.toLowerCase();
+      return (
+        t.notes?.toLowerCase().includes(q) ||
+        t.category?.name?.toLowerCase().includes(q)
+      );
+    });
+  }, [quickModalType, recentIncomeTransactions, modalSearchQuery]);
+
+  const modalDebitItems = useMemo(() => {
+    if (quickModalType !== 'DEBIT') return [];
+    return recentExpenseTransactions.filter(t => {
+      if (!modalSearchQuery.trim()) return true;
+      const q = modalSearchQuery.toLowerCase();
+      return (
+        t.notes?.toLowerCase().includes(q) ||
+        t.category?.name?.toLowerCase().includes(q) ||
+        t.fundSource?.toLowerCase().includes(q)
+      );
+    });
+  }, [quickModalType, recentExpenseTransactions, modalSearchQuery]);
 
   // Overall Total Balance (across all completed transactions)
   const overallBalance = useMemo(() => {
@@ -308,16 +346,16 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </h2>
       </div>
 
-      {/* Credit / Debit Interactive Mini Cards */}
+      {/* Credit / Debit Interactive Mini Cards (Click to Open Quick Ledger Popup) */}
       <div className="order-4 grid grid-cols-2 gap-4">
         {/* Credit (Income) Card */}
         <div 
           onClick={() => {
-            setDebitCreditTab('CREDIT');
-            setActiveView('DebitCredit');
+            setModalSearchQuery('');
+            setQuickModalType('CREDIT');
           }}
           className="group bg-card hover:bg-emerald-500/10 border border-border hover:border-emerald-500/40 rounded-2xl p-4 sm:p-5 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.98]"
-          title="Click to view Credit (Income) ledger"
+          title="Click to view Credit (Income) entries popup"
         >
           <div className="flex items-center justify-between gap-1 mb-1.5">
             <div className="flex items-center gap-2 text-emerald-400 uppercase tracking-wider text-xs font-bold">
@@ -334,11 +372,11 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         {/* Debit (Expenses) Card */}
         <div 
           onClick={() => {
-            setDebitCreditTab('DEBIT');
-            setActiveView('DebitCredit');
+            setModalSearchQuery('');
+            setQuickModalType('DEBIT');
           }}
           className="group bg-card hover:bg-rose-500/10 border border-border hover:border-rose-500/40 rounded-2xl p-4 sm:p-5 shadow-sm cursor-pointer transition-all duration-200 active:scale-[0.98]"
-          title="Click to view Debit (Costs & Bills) ledger"
+          title="Click to view Debit (Expenses & Bills) entries popup"
         >
           <div className="flex items-center justify-between gap-1 mb-1.5">
             <div className="flex items-center gap-2 text-rose-400 uppercase tracking-wider text-xs font-bold">
@@ -848,6 +886,201 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
           item={editingItem} 
           onClose={() => setEditingItem(null)} 
         />
+      )}
+
+      {/* Quick Ledger Popup Modal (Credit or Debit only) */}
+      {quickModalType && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setQuickModalType(null)}
+          />
+
+          <div className={`relative z-10 w-full max-w-lg bg-[#0d1520] border rounded-3xl shadow-2xl flex flex-col max-h-[88vh] overflow-hidden animate-in zoom-in-95 duration-200 ${
+            quickModalType === 'CREDIT' ? 'border-emerald-500/40 shadow-emerald-950/40' : 'border-rose-500/40 shadow-rose-950/40'
+          }`}>
+            
+            {/* Modal Header */}
+            <div className={`p-4 sm:p-5 border-b flex items-center justify-between ${
+              quickModalType === 'CREDIT' 
+                ? 'bg-gradient-to-r from-emerald-950/80 via-emerald-900/40 to-transparent border-emerald-500/30' 
+                : 'bg-gradient-to-r from-rose-950/80 via-rose-900/40 to-transparent border-rose-500/30'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shadow-md shrink-0 ${
+                  quickModalType === 'CREDIT' ? 'bg-emerald-500 text-black shadow-emerald-500/30' : 'bg-rose-500 text-white shadow-rose-500/30'
+                }`}>
+                  {quickModalType === 'CREDIT' ? <ArrowDownRight size={22} strokeWidth={2.5} /> : <ArrowUpRight size={22} strokeWidth={2.5} />}
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg text-white">
+                    {quickModalType === 'CREDIT' ? 'Credit · Income Breakdown' : 'Debit · Expenses & Bills'}
+                  </h3>
+                  <p className={`text-xs font-semibold ${quickModalType === 'CREDIT' ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {format(selectedMonth, 'MMMM yyyy')} · Total: {quickModalType === 'CREDIT' ? '+' : '-'}{currency} {
+                      (quickModalType === 'CREDIT' ? totalIncome : totalExpense).toLocaleString(undefined, { minimumFractionDigits: 2 })
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setQuickModalType(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors shrink-0"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Search and Action Bar */}
+            <div className="p-3 sm:p-4 border-b border-[#1e293b] bg-background/50 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={quickModalType === 'CREDIT' ? "Search income entries..." : "Search expenses by note, category, fund..."}
+                  value={modalSearchQuery}
+                  onChange={(e) => setModalSearchQuery(e.target.value)}
+                  className="w-full bg-[#131f2e] border border-[#233549] rounded-xl pl-9 pr-3 py-2 text-xs sm:text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors"
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setQuickModalType(null);
+                  if (onOpenAddModal) onOpenAddModal();
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 shrink-0 ${
+                  quickModalType === 'CREDIT'
+                    ? 'bg-emerald-500 hover:bg-emerald-400 text-black shadow-emerald-500/20'
+                    : 'bg-rose-500 hover:bg-rose-400 text-white shadow-rose-500/20'
+                }`}
+              >
+                <Plus size={14} strokeWidth={2.5} />
+                <span className="hidden sm:inline">Add {quickModalType === 'CREDIT' ? 'Income' : 'Expense'}</span>
+                <span className="sm:hidden">Add</span>
+              </button>
+            </div>
+
+            {/* Scrollable Transaction List */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 divide-y divide-[#1e293b] space-y-2">
+              {quickModalType === 'CREDIT' ? (
+                modalCreditItems.length > 0 ? (
+                  modalCreditItems.map(t => (
+                    <div
+                      key={t._id}
+                      onClick={() => setEditingItem(t)}
+                      className="pt-2 first:pt-0 p-3 rounded-2xl bg-[#111c29]/60 hover:bg-emerald-500/10 border border-[#1e2d3f] hover:border-emerald-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                          <ArrowDownRight size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[190px] sm:max-w-xs">
+                              {t.notes || t.category?.name || 'Income'}
+                            </p>
+                            {t.receiptImage && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
+                                <Camera size={9} />
+                                <span>Photo</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5">
+                            {format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Income'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="font-black text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
+                        +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center flex flex-col items-center justify-center">
+                    <p className="font-bold text-sm text-white">No income entries found</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {modalSearchQuery ? 'No income matches your search term.' : `No credit transactions recorded for ${format(selectedMonth, 'MMMM yyyy')}.`}
+                    </p>
+                  </div>
+                )
+              ) : (
+                modalDebitItems.length > 0 ? (
+                  modalDebitItems.map(t => (
+                    <div
+                      key={t._id}
+                      onClick={() => setEditingItem(t)}
+                      className="pt-2 first:pt-0 p-3 rounded-2xl bg-[#1c1218]/60 hover:bg-rose-500/10 border border-[#311c26] hover:border-rose-500/40 cursor-pointer transition-all flex items-center justify-between gap-3 active:scale-[0.99]"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-300 border border-rose-500/20 flex items-center justify-center shrink-0">
+                          <ArrowUpRight size={16} />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[190px] sm:max-w-xs">
+                              {t.notes || t.category?.name || 'Expense'}
+                            </p>
+                            {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
+                            {t.receiptImage && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
+                                <Camera size={9} />
+                                <span>Photo</span>
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-0.5 flex items-center flex-wrap gap-1.5">
+                            <span>{format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Expense'}</span>
+                            {t.fundSource && (() => {
+                              const resolved = resolveFundSource(t.fundSource, transactions, categories);
+                              return (
+                                <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#331722] text-rose-200 border border-rose-400/40">
+                                  {resolved}
+                                </span>
+                              );
+                            })()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span className="font-black text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
+                        -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center flex flex-col items-center justify-center">
+                    <p className="font-bold text-sm text-white">No expenses found</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {modalSearchQuery ? 'No costs match your search term.' : `No debit transactions recorded for ${format(selectedMonth, 'MMMM yyyy')}.`}
+                    </p>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 sm:p-4 border-t border-[#1e293b] bg-[#090e15] flex items-center justify-between">
+              <span className="text-xs font-mono text-slate-400">
+                {quickModalType === 'CREDIT' ? `${modalCreditItems.length} income entries` : `${modalDebitItems.length} expense entries`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQuickModalType(null)}
+                className="px-4 py-2 rounded-xl bg-secondary text-secondary-foreground hover:text-white text-xs font-bold transition-colors"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>
