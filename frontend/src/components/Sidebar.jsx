@@ -3,7 +3,7 @@ import useStore from '../store/useStore';
 import { Home, LayoutGrid, Wallet, ReceiptText, Settings, X, Lock, LogOut, Sun, Moon, Coins } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { activeView, setActiveView, lockApp, logout, settings, toggleTheme, cryptoHoldings } = useStore();
+  const { activeView, setActiveView, lockApp, logout, settings, toggleTheme, cryptoHoldings, userProfile } = useStore();
 
   const isDark = settings?.theme === 'dark';
   const menuItems = [
