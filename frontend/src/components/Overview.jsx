@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight, Coins, ChevronRight as ArrowRightIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, RefreshCcw, AlertTriangle, CheckCircle2, Clock, Plus, ArrowUpRight, ArrowDownRight, Coins, ChevronRight as ArrowRightIcon, Camera, Wallet } from 'lucide-react';
 import { format, isSameMonth, isSameDay, getDaysInMonth, startOfMonth, addDays } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import useStore from '../store/useStore';
@@ -459,102 +459,181 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
         </div>
       </div>
 
-      {/* Dual-Card Side-by-Side Recent Transactions Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* High-Visibility Activity Section: Credit & Debit Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        {/* Left Column: Credit — money in */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <ArrowDownRight size={18} className="text-emerald-400" />
-              <h3 className="font-bold text-sm text-foreground">Credit — money in</h3>
+        {/* Left Card: Credit — Money In */}
+        <div className="bg-[#0b1622] rounded-3xl border border-emerald-500/30 overflow-hidden shadow-lg shadow-emerald-950/20 flex flex-col transition-all hover:border-emerald-500/50">
+          {/* Card Header */}
+          <div className="p-4 bg-gradient-to-r from-emerald-950/60 to-transparent border-b border-emerald-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                <ArrowDownRight size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-xs sm:text-sm text-emerald-300 uppercase tracking-wider">Credit · Money In</h3>
+                <p className="text-[10px] text-slate-400">Total earned & credited</p>
+              </div>
             </div>
-            <span className="font-bold text-sm text-emerald-400">
-              {currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
+
+            <div className="flex items-center gap-2.5">
+              <span className="font-bold text-sm sm:text-base text-emerald-400 font-mono">
+                +{currency} {totalIncome.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenAddModal && onOpenAddModal()}
+                className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors"
+                title="Add income entry"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-2 divide-y divide-border min-h-[140px] flex flex-col justify-start shadow-sm">
+          {/* List of Income Transactions */}
+          <div className="p-2 divide-y divide-[#1e293b] flex-1 flex flex-col justify-start min-h-[160px]">
             {recentIncomeTransactions.length > 0 ? (
               recentIncomeTransactions.map((t) => (
                 <div
                   key={t._id}
                   onClick={() => setEditingItem(t)}
-                  className="p-3 hover:bg-secondary/30 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-3 group"
+                  className="p-3 hover:bg-emerald-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
                 >
-                  <div>
-                    <p className="font-semibold text-sm text-foreground group-hover:text-emerald-400 transition-colors">
-                      {t.notes || t.category?.name || 'Income'}
-                    </p>
-                    <p className="text-xs text-secondary-foreground mt-0.5">
-                      {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
-                    </p>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                      <ArrowDownRight size={14} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-bold text-xs sm:text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
+                          {t.notes || t.category?.name || 'Income'}
+                        </p>
+                        {t.receiptImage && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
+                            <Camera size={8} />
+                            <span>Photo</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
+                      </p>
+                    </div>
                   </div>
-                  <span className="font-bold text-sm text-emerald-400 whitespace-nowrap">
-                    +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+
+                  <span className="font-bold text-xs sm:text-sm text-emerald-400 font-mono shrink-0 whitespace-nowrap">
+                    +{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center text-xs text-secondary-foreground my-auto">
-                No income entries for {format(selectedMonth, 'MMMM yyyy')}.
+              <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                  <ArrowDownRight size={16} />
+                </div>
+                <p className="font-medium text-slate-300">No income logged for this month</p>
+                <button
+                  type="button"
+                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  className="mt-1 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                >
+                  <Plus size={13} />
+                  <span>Log Income</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Debit — costs & bills */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <ArrowUpRight size={18} className="text-rose-400" />
-              <h3 className="font-bold text-sm text-foreground">Debit — costs & bills</h3>
+        {/* Right Card: Debit — Costs & Bills */}
+        <div className="bg-[#1c0f15] rounded-3xl border border-rose-500/30 overflow-hidden shadow-lg shadow-rose-950/20 flex flex-col transition-all hover:border-rose-500/50">
+          {/* Card Header */}
+          <div className="p-4 bg-gradient-to-r from-rose-950/60 to-transparent border-b border-rose-500/20 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+                <ArrowUpRight size={18} />
+              </div>
+              <div>
+                <h3 className="font-bold text-xs sm:text-sm text-rose-300 uppercase tracking-wider">Debit · Costs & Bills</h3>
+                <p className="text-[10px] text-slate-400">Expenses, purchases & bills</p>
+              </div>
             </div>
-            <span className="font-bold text-sm text-foreground">
-              {currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </span>
+
+            <div className="flex items-center gap-2.5">
+              <span className="font-bold text-sm sm:text-base text-rose-400 font-mono">
+                -{currency} {totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenAddModal && onOpenAddModal()}
+                className="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors"
+                title="Add expense entry"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
           </div>
 
-          <div className="bg-card rounded-2xl border border-border p-2 divide-y divide-border min-h-[140px] flex flex-col justify-start shadow-sm">
+          {/* List of Expense Transactions */}
+          <div className="p-2 divide-y divide-[#2a1b22] flex-1 flex flex-col justify-start min-h-[160px]">
             {recentExpenseTransactions.length > 0 ? (
               recentExpenseTransactions.map((t) => (
                 <div
                   key={t._id}
                   onClick={() => setEditingItem(t)}
-                  className="p-3 hover:bg-secondary/30 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-3 group"
+                  className="p-3 hover:bg-rose-500/5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 group active:scale-[0.99]"
                 >
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors">
-                        {t.notes || t.category?.name || 'Expense'}
-                      </p>
-                      {t.isRecurring && <RefreshCcw size={12} className="text-primary shrink-0" title="Recurring" />}
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center shrink-0">
+                      <ArrowUpRight size={14} />
                     </div>
-                    <p className="text-xs text-secondary-foreground mt-0.5 flex items-center flex-wrap gap-1.5">
-                      <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
-                      {t.fundSource && (() => {
-                        const resolved = resolveFundSource(t.fundSource, transactions, categories);
-                        const isMisc = resolved.toLowerCase() === 'miscellaneous' || resolved.toLowerCase() === 'misc';
-                        return (
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                            isMisc 
-                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          }`}>
-                            Paid from: {resolved}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-bold text-xs sm:text-sm text-white group-hover:text-rose-300 transition-colors truncate">
+                          {t.notes || t.category?.name || 'Expense'}
+                        </p>
+                        {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
+                        {t.receiptImage && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[9px] font-bold border border-emerald-500/30 shrink-0">
+                            <Camera size={8} />
+                            <span>Photo</span>
                           </span>
-                        );
-                      })()}
-                    </p>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5 flex items-center flex-wrap gap-1.5">
+                        <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
+                        {t.fundSource && (() => {
+                          const resolved = resolveFundSource(t.fundSource, transactions, categories);
+                          return (
+                            <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#2d1820] text-rose-300 border border-rose-500/30">
+                              {resolved}
+                            </span>
+                          );
+                        })()}
+                      </p>
+                    </div>
                   </div>
-                  <span className="font-bold text-sm text-foreground whitespace-nowrap">
-                    -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+
+                  <span className="font-bold text-xs sm:text-sm text-white font-mono shrink-0 whitespace-nowrap">
+                    -{currency} {Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 0 })}
                   </span>
                 </div>
               ))
             ) : (
-              <div className="p-8 text-center text-xs text-secondary-foreground my-auto">
-                No paid expenses for {format(selectedMonth, 'MMMM yyyy')}.
+              <div className="p-6 text-center text-xs text-slate-400 my-auto flex flex-col items-center justify-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center">
+                  <ArrowUpRight size={16} />
+                </div>
+                <p className="font-medium text-slate-300">No expenses logged for this month</p>
+                <button
+                  type="button"
+                  onClick={() => onOpenAddModal && onOpenAddModal()}
+                  className="mt-1 px-3 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 font-semibold text-xs transition-colors flex items-center gap-1.5"
+                >
+                  <Plus size={13} />
+                  <span>Log Expense</span>
+                </button>
               </div>
             )}
           </div>
