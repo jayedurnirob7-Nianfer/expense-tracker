@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import useStore from '../store/useStore';
-import { X, ChevronDown, Calendar as CalendarIcon, Camera, Trash2, Upload, Sparkles } from 'lucide-react';
+import { X, ChevronDown, Calendar as CalendarIcon } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { format } from 'date-fns';
-import { compressImage, uploadToImgBB } from '../utils/imageCompressor';
+import ReceiptImageUploader from './ReceiptImageUploader';
 
 import { getAvailableFundOptions } from '../utils/funds';
 
@@ -15,12 +15,7 @@ const AddBillModal = ({ onClose }) => {
   const [dueDate, setDueDate] = useState(new Date());
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isEssential, setIsEssential] = useState(true);
-  const [receiptImage, setReceiptImage] = useState('');
-  const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [imageError, setImageError] = useState('');
-
-  const cameraInputRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const [receiptImages, setReceiptImages] = useState([]);
 
   // Fund / Paid From state - automatically includes active income funds and Miscellaneous
   const [customFunds, setCustomFunds] = useState([]);
@@ -69,30 +64,6 @@ const AddBillModal = ({ onClose }) => {
     setShowAddFund(false);
   };
 
-  const handleImageSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImageError('');
-    setIsProcessingImage(true);
-
-    try {
-      const cdnImageUrl = await uploadToImgBB(file);
-      setReceiptImage(cdnImageUrl);
-    } catch (err) {
-      console.error('Image upload failed:', err);
-      setImageError(err.message || 'Failed to upload photo. Please try again.');
-    } finally {
-      setIsProcessingImage(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleRemoveImage = () => {
-    setReceiptImage('');
-    setImageError('');
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !amount) return;
@@ -109,7 +80,8 @@ const AddBillModal = ({ onClose }) => {
       isRecurring: true,
       status: 'Pending',
       isEssential,
-      receiptImage: receiptImage || undefined
+      receiptImage: receiptImages[0] || '',
+      receiptImages: receiptImages
     });
 
     onClose();
@@ -117,19 +89,19 @@ const AddBillModal = ({ onClose }) => {
 
   return (
     <div 
-      className="fixed inset-0 min-h-[100dvh] w-full h-full bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 min-h-[100dvh] w-full h-full bg-black/85 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
       onClick={onClose}
     >
       <div 
-        className="bg-[#0e1621] border border-[#1e293b] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-foreground"
+        className="bg-[#0e1621] border border-[#1e293b] rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-foreground my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="flex justify-between items-start p-6 pb-2">
+        <div className="flex justify-between items-start p-5 sm:p-6 pb-3 border-b border-[#1e293b] shrink-0">
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight">New bill</h2>
-            <p className="text-sm text-slate-400 mt-1">Recurring monthly payment you need to cover.</p>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">Recurring monthly payment you need to cover.</p>
           </div>
           <button 
             type="button"
@@ -140,7 +112,7 @@ const AddBillModal = ({ onClose }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 pt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {/* Name */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Name</label>
@@ -311,112 +283,12 @@ const AddBillModal = ({ onClose }) => {
           </div>
 
           {/* Receipt / Contract Photo Attachment */}
-          <div className="pt-1">
-            <div className="flex justify-between items-center mb-1.5">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Camera size={14} className="text-emerald-400" />
-                <span>Attach Bill / Contract Photo (Optional)</span>
-              </label>
-              {receiptImage && (
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1"
-                >
-                  <Trash2 size={12} />
-                  <span>Remove</span>
-                </button>
-              )}
-            </div>
-
-            {/* Hidden native file inputs for Camera and File Picker */}
-            <input 
-              type="file" 
-              ref={cameraInputRef} 
-              accept="image/*" 
-              capture="environment" 
-              onChange={handleImageSelect} 
-              className="hidden" 
-            />
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              accept="image/*" 
-              onChange={handleImageSelect} 
-              className="hidden" 
-            />
-
-            {imageError && (
-              <p className="text-xs text-rose-400 mb-2">{imageError}</p>
-            )}
-
-            {isProcessingImage ? (
-              <div className="w-full py-6 rounded-2xl bg-[#131d2b] border border-dashed border-[#1e293b] flex flex-col items-center justify-center gap-2">
-                <div className="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-slate-400 font-medium">Uploading to cloud CDN...</span>
-              </div>
-            ) : receiptImage ? (
-              <div className="relative rounded-2xl overflow-hidden border border-emerald-500/30 bg-[#131d2b] group">
-                <img 
-                  src={receiptImage} 
-                  alt="Bill / Contract Preview" 
-                  className="w-full max-h-48 object-contain bg-black/40"
-                />
-                <div className="p-2.5 bg-[#0e1621]/90 backdrop-blur border-t border-[#1e293b] flex items-center justify-between">
-                  <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                    <Sparkles size={13} />
-                    <span>Photo attached</span>
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => cameraInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
-                    >
-                      Retake
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-white text-xs font-medium transition-colors"
-                    >
-                      Change
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => cameraInputRef.current?.click()}
-                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 flex items-center justify-center transition-colors">
-                    <Camera size={16} />
-                  </div>
-                  <div className="text-center sm:text-left">
-                    <p className="text-xs font-bold text-white leading-tight">Camera</p>
-                    <p className="text-[10px] text-slate-400">Take a photo</p>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="py-3 px-3 rounded-2xl bg-[#131d2b] hover:bg-[#1a2638] border border-[#1e293b] hover:border-emerald-500/40 text-slate-300 hover:text-white flex flex-col sm:flex-row items-center justify-center gap-2 transition-all group cursor-pointer"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Upload size={16} />
-                  </div>
-                  <div className="text-center sm:text-left">
-                    <p className="text-xs font-bold text-white leading-tight">Upload</p>
-                    <p className="text-[10px] text-slate-400">From gallery</p>
-                  </div>
-                </button>
-              </div>
-            )}
-          </div>
+          <ReceiptImageUploader
+            images={receiptImages}
+            onChange={setReceiptImages}
+            label="Attach Bill / Contract Photos (Optional)"
+            allowMultiple={true}
+          />
 
           {/* Submit Button */}
           <div className="pt-2">

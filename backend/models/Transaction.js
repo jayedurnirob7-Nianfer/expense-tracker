@@ -13,6 +13,7 @@ const transactionSchema = new mongoose.Schema({
   fundSource: { type: String, default: 'Salary' },
   status: { type: String, enum: ['Pending', 'Paid'], default: 'Paid' },
   receiptImage: { type: String, default: '' },
+  receiptImages: [{ type: String }],
 }, { timestamps: true });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

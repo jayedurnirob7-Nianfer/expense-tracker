@@ -328,12 +328,18 @@ const DebitCredit = () => {
                               {t.notes || t.category?.name || (isIncome ? 'Income' : 'Expense')}
                             </p>
                             {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
-                            {t.receiptImage && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
-                                <Camera size={9} />
-                                <span>Photo</span>
-                              </span>
-                            )}
+                            {(() => {
+                              const count = (t.receiptImages && t.receiptImages.length > 0)
+                                ? t.receiptImages.length
+                                : (t.receiptImage ? 1 : 0);
+                              if (count === 0) return null;
+                              return (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
+                                  <Camera size={9} />
+                                  <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
                           <p className="text-[11px] text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
                             <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || (isIncome ? 'Income' : 'Expense')}</span>
@@ -388,12 +394,18 @@ const DebitCredit = () => {
                           {t.notes || t.category?.name || 'Expense'}
                         </p>
                         {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
-                        {t.receiptImage && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
-                            <Camera size={9} />
-                            <span>Photo</span>
-                          </span>
-                        )}
+                        {(() => {
+                          const count = (t.receiptImages && t.receiptImages.length > 0)
+                            ? t.receiptImages.length
+                            : (t.receiptImage ? 1 : 0);
+                          if (count === 0) return null;
+                          return (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
+                              <Camera size={9} />
+                              <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="text-[11px] text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
                         <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
@@ -442,12 +454,18 @@ const DebitCredit = () => {
                         <p className="font-semibold text-xs sm:text-sm text-foreground truncate max-w-[170px]">
                           {t.notes || t.category?.name || 'Income'}
                         </p>
-                        {t.receiptImage && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
-                            <Camera size={9} />
-                            <span>Photo</span>
-                          </span>
-                        )}
+                        {(() => {
+                          const count = (t.receiptImages && t.receiptImages.length > 0)
+                            ? t.receiptImages.length
+                            : (t.receiptImage ? 1 : 0);
+                          if (count === 0) return null;
+                          return (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 shrink-0">
+                              <Camera size={9} />
+                              <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="text-[11px] text-secondary-foreground mt-0.5">
                         {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
@@ -495,12 +513,18 @@ const DebitCredit = () => {
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Income'}</p>
-                      {t.receiptImage && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
-                          <Camera size={9} />
-                          <span>Receipt</span>
-                        </span>
-                      )}
+                      {(() => {
+                        const count = (t.receiptImages && t.receiptImages.length > 0)
+                          ? t.receiptImages.length
+                          : (t.receiptImage ? 1 : 0);
+                        if (count === 0) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                            <Camera size={9} />
+                            <span>{count > 1 ? `${count} Photos` : 'Receipt'}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-secondary-foreground">
                       {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
@@ -548,12 +572,18 @@ const DebitCredit = () => {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-semibold text-sm text-foreground hover:text-primary transition-colors">{t.notes || t.category?.name || 'Expense'}</p>
                       {t.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
-                      {t.receiptImage && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
-                          <Camera size={9} />
-                          <span>Receipt</span>
-                        </span>
-                      )}
+                      {(() => {
+                        const count = (t.receiptImages && t.receiptImages.length > 0)
+                          ? t.receiptImages.length
+                          : (t.receiptImage ? 1 : 0);
+                        if (count === 0) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                            <Camera size={9} />
+                            <span>{count > 1 ? `${count} Photos` : 'Receipt'}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
                     <p className="text-xs text-secondary-foreground flex items-center flex-wrap gap-1.5 mt-0.5">
                       <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>

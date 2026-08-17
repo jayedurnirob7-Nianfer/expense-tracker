@@ -216,12 +216,18 @@ const Bills = ({ onOpenAddBillModal }) => {
                         {b.notes || b.category?.name || 'Bill'}
                       </p>
                       {b.isRecurring && <RefreshCcw size={12} className="text-primary" title="Recurring" />}
-                      {b.receiptImage && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
-                          <Camera size={9} />
-                          <span>Receipt</span>
-                        </span>
-                      )}
+                      {(() => {
+                        const count = (b.receiptImages && b.receiptImages.length > 0)
+                          ? b.receiptImages.length
+                          : (b.receiptImage ? 1 : 0);
+                        if (count === 0) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20" title={`${count} photo${count > 1 ? 's' : ''} attached`}>
+                            <Camera size={9} />
+                            <span>{count > 1 ? `${count} Photos` : 'Receipt'}</span>
+                          </span>
+                        );
+                      })()}
                       {overdue && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
                           ⚠️ Overdue

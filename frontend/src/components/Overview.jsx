@@ -576,12 +576,18 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                           <p className="font-bold text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
                             {t.notes || t.category?.name || 'Income'}
                           </p>
-                          {t.receiptImage && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
-                              <Camera size={10} />
-                              <span>Photo</span>
-                            </span>
-                          )}
+                          {(() => {
+                            const count = (t.receiptImages && t.receiptImages.length > 0)
+                              ? t.receiptImages.length
+                              : (t.receiptImage ? 1 : 0);
+                            if (count === 0) return null;
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
+                                <Camera size={10} />
+                                <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-xs text-slate-200 font-medium mt-0.5">
                           {format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Income'}
@@ -661,12 +667,18 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                             {t.notes || t.category?.name || 'Expense'}
                           </p>
                           {t.isRecurring && <RefreshCcw size={12} className="text-primary shrink-0" title="Recurring" />}
-                          {t.receiptImage && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
-                              <Camera size={10} />
-                              <span>Photo</span>
-                            </span>
-                          )}
+                          {(() => {
+                            const count = (t.receiptImages && t.receiptImages.length > 0)
+                              ? t.receiptImages.length
+                              : (t.receiptImage ? 1 : 0);
+                            if (count === 0) return null;
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 shrink-0">
+                                <Camera size={10} />
+                                <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-xs text-slate-200 font-medium mt-0.5 flex items-center flex-wrap gap-2">
                           <span>{format(new Date(t.date), 'MMM dd')} · {t.category?.name || 'Expense'}</span>
@@ -985,12 +997,18 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                             <p className="font-bold text-xs sm:text-sm text-white truncate max-w-[180px] sm:max-w-xs">
                               {t.notes || t.category?.name || 'Income'}
                             </p>
-                            {t.receiptImage && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
-                                <Camera size={9} />
-                                <span>Photo</span>
-                              </span>
-                            )}
+                            {(() => {
+                              const count = (t.receiptImages && t.receiptImages.length > 0)
+                                ? t.receiptImages.length
+                                : (t.receiptImage ? 1 : 0);
+                              if (count === 0) return null;
+                              return (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
+                                  <Camera size={9} />
+                                  <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
                           <p className="text-[11px] text-slate-300 mt-0.5 truncate">
                             {format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Income'}
@@ -1029,12 +1047,18 @@ const Overview = ({ onOpenAddModal, onOpenAddBillModal }) => {
                               {t.notes || t.category?.name || 'Expense'}
                             </p>
                             {t.isRecurring && <RefreshCcw size={11} className="text-primary shrink-0" title="Recurring" />}
-                            {t.receiptImage && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
-                                <Camera size={9} />
-                                <span>Photo</span>
-                              </span>
-                            )}
+                            {(() => {
+                              const count = (t.receiptImages && t.receiptImages.length > 0)
+                                ? t.receiptImages.length
+                                : (t.receiptImage ? 1 : 0);
+                              if (count === 0) return null;
+                              return (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 text-[9px] font-bold border border-emerald-400/40 shrink-0">
+                                  <Camera size={9} />
+                                  <span>{count > 1 ? `${count} Photos` : 'Photo'}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
                           <div className="text-[11px] text-slate-300 mt-0.5 flex items-center flex-wrap gap-1.5">
                             <span>{format(new Date(t.date), 'MMM dd, yyyy')} · {t.category?.name || 'Expense'}</span>
