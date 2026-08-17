@@ -90,8 +90,8 @@ const ReceiptImageUploader = ({
 
   return (
     <div className="pt-1 space-y-2">
-      {/* Label Header */}
-      <div className="flex justify-between items-center">
+      {/* Label Header with Compact Add Buttons */}
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
           <Camera size={14} className="text-emerald-400" />
           <span>{label}</span>
@@ -103,14 +103,41 @@ const ReceiptImageUploader = ({
         </label>
 
         {imageList.length > 0 && (
-          <button
-            type="button"
-            onClick={handleClearAll}
-            className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition-colors"
-          >
-            <Trash2 size={12} />
-            <span>Clear all</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            {allowMultiple && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 text-[11px] font-bold transition-colors flex items-center gap-1 border border-emerald-500/30 cursor-pointer"
+                  title="Take another photo with camera"
+                >
+                  <Camera size={12} />
+                  <span>+ Camera</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-2.5 py-1 rounded-lg bg-[#1a2638] hover:bg-[#223249] text-slate-200 hover:text-white text-[11px] font-bold transition-colors flex items-center gap-1 border border-slate-700 cursor-pointer"
+                  title="Upload more from gallery"
+                >
+                  <Upload size={12} />
+                  <span>+ Upload</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="text-xs text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition-colors ml-1 cursor-pointer"
+              title="Remove all photos"
+            >
+              <Trash2 size={12} />
+              <span>Clear</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -153,7 +180,7 @@ const ReceiptImageUploader = ({
         </div>
       )}
 
-      {/* Images Attached: Gallery Thumbnail Grid */}
+      {/* Images Attached: Clean Gallery Thumbnail Grid */}
       {imageList.length > 0 ? (
         <div className="space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -197,33 +224,6 @@ const ReceiptImageUploader = ({
                 </div>
               </div>
             ))}
-
-            {/* "+ Add More" Tile */}
-            {allowMultiple && (
-              <div className="aspect-video sm:aspect-square rounded-2xl border border-dashed border-[#233549] hover:border-emerald-500/50 bg-[#131d2b]/60 hover:bg-[#131d2b] flex flex-col items-center justify-center gap-2 p-2 transition-all">
-                <p className="text-[11px] font-bold text-slate-300 text-center">Add another</p>
-                <div className="flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="p-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 transition-colors flex items-center gap-1 text-[11px] font-bold"
-                    title="Take another photo"
-                  >
-                    <Camera size={13} />
-                    <span className="hidden sm:inline">Camera</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 rounded-xl bg-primary/15 hover:bg-primary/30 text-primary transition-colors flex items-center gap-1 text-[11px] font-bold"
-                    title="Upload from gallery"
-                  >
-                    <Upload size={13} />
-                    <span className="hidden sm:inline">Gallery</span>
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       ) : (
